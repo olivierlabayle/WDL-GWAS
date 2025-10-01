@@ -1,6 +1,6 @@
-using WDL_GWAS
+using PopGen
 using Test
 
-@testset "WDL_GWAS.jl" begin
+@testset "WDL-GWAS.jl" begin
     # Write your tests here.
 end
