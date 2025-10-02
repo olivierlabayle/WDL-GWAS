@@ -10,7 +10,7 @@ TESTDIR = joinpath(PKGDIR, "test")
 
 @testset "Test apply_filter" begin
     data = DataFrame(
-        COHORT = ["GENOMICC", "GENOMICC", "UKB", "UKB", "UKB", "UKB", "UKB", "UKB", "UKB", "UKB"],
+        COHORT = ["FUTURE_HEALTH", "FUTURE_HEALTH", "UKB", "UKB", "UKB", "UKB", "UKB", "UKB", "UKB", "UKB"],
         PRIMARY_DIAGNOSIS = ["COVID-19", missing, "COVID-19", "COVID-19", "PNEUMONIA", "PNEUMONIA", "PNEUMONIA", "PNEUMONIA", "PNEUMONIA", "PNEUMONIA"],
         AGE = [25, 35, 45, 55, 65, 75, 85, missing, 50, 60]
     )
@@ -32,7 +32,7 @@ end
 @testset "Test make-gwas-groups" begin
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "gwas")
-    covariates_file = joinpath(TESTDIR, "assets", "gwas", "covariates", "ukb_genomicc.covariates.csv")
+    covariates_file = joinpath(TESTDIR, "assets", "covariates", "covariates.csv")
     min_cases_controls = 200
     copy!(ARGS, [
         "make-gwas-groups", 
@@ -63,7 +63,7 @@ end
         "SEVERE_PNEUMONIA",
         "AGE_x_AGE",
         "AGE_x_SEX",
-        "COHORT__GENOMICC",
+        "COHORT__FUTURE_HEALTH",
         "COHORT__UKB"
     ]
     @test names(updated_covariates) == expected_covariate_cols
@@ -76,7 +76,7 @@ end
         end
     end
     # Check covariates list
-    @test readlines(joinpath(tmpdir, "gwas.covariates_list.txt"),) == ["AGE", "AGE_x_AGE", "AGE_x_SEX", "COHORT__GENOMICC", "COHORT__UKB"]
+    @test readlines(joinpath(tmpdir, "gwas.covariates_list.txt"),) == ["AGE", "AGE_x_AGE", "AGE_x_SEX", "COHORT__FUTURE_HEALTH", "COHORT__UKB"]
         
     # Check groups files
     case_control_counts = sort(combine(
@@ -102,7 +102,7 @@ end
                 joined = innerjoin(updated_covariates, individuals, on = [:FID, :IID])
                 @test all(==(ancestry), joined.SUPERPOPULATION)
                 @test all(==(sex), joined.SEX)
-                @test nrow(dropmissing(joined[!, ["SEVERE_COVID_19", "AGE", "AGE_x_AGE", "AGE_x_SEX", "COHORT__GENOMICC", "COHORT__UKB"]])) == nrow(joined)
+                @test nrow(dropmissing(joined[!, ["SEVERE_COVID_19", "AGE", "AGE_x_AGE", "AGE_x_SEX", "COHORT__FUTURE_HEALTH", "COHORT__UKB"]])) == nrow(joined)
             end
         end
     end
@@ -111,7 +111,7 @@ end
 @testset "Test make-gwas-groups: no groups with filter" begin
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "gwas_all")
-    covariates_file = joinpath(TESTDIR, "assets", "gwas", "covariates", "ukb_genomicc.covariates.csv")
+    covariates_file = joinpath(TESTDIR, "assets", "covariates", "covariates.csv")
     min_cases_controls = 2500
     copy!(ARGS, [
         "make-gwas-groups", 

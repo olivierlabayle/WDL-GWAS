@@ -43,14 +43,14 @@ end
 @testset "Test region_plot" begin
     finemapping_results = PopGen.harmonize_finemapping_results(
             CSV.read(
-        joinpath(TESTDIR, "assets", "gwas", "results", "results.all_chr.EUR.SEVERE_COVID_19.finemapping.tsv"), 
+        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.finemapping.tsv"), 
         DataFrame; 
         delim="\t"
     ))
     finemapping_results = finemapping_results[finemapping_results.LOCUS_ID .== "rs7515509", :]
     gwas_results = PopGen.harmonize_gwas_results(
             CSV.read(
-        joinpath(TESTDIR, "assets", "gwas", "results", "results.all_chr.EUR.SEVERE_COVID_19.gwas.tsv"), 
+        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.gwas.tsv"), 
         DataFrame; 
         delim="\t"
     ))
@@ -68,8 +68,8 @@ end
     output_prefix = joinpath(tmpdir, "plot")
     copy!(ARGS,[
         "gwas-plots", 
-        joinpath(TESTDIR, "assets", "gwas", "results", "results.all_chr.EUR.SEVERE_COVID_19.gwas.tsv"), 
-        joinpath(TESTDIR, "assets", "gwas", "results", "results.all_chr.EUR.SEVERE_COVID_19.finemapping.tsv"), 
+        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.gwas.tsv"), 
+        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.finemapping.tsv"), 
         "--maf=0.01",
         "--output-prefix=$output_prefix"
         ]

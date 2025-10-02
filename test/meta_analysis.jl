@@ -11,7 +11,7 @@ TESTDIR = joinpath(PKGDIR, "test")
 @testset "Test load_meta_analysis_worklist" begin
     tmpdir = mktempdir()
     gwas_results_list_file = joinpath(tmpdir, "regenie_files_list.txt")
-    regenie_files_list = readdir(joinpath(TESTDIR, "assets", "gwas", "meta_analysis"), join=true)
+    regenie_files_list = readdir(joinpath(TESTDIR, "assets", "meta_analysis"), join=true)
     open(gwas_results_list_file, "w") do io
         for f in regenie_files_list
             println(io, f)
@@ -36,10 +36,10 @@ end
 @testset "Test append_GWAS_info_to_meta_analysis_results!" begin
     phenotype_gwas_files = filter(
         x -> occursin("SEVERE_PNEUMONIA", x),
-        readdir(joinpath(TESTDIR, "assets", "gwas", "meta_analysis"), join=true)
+        readdir(joinpath(TESTDIR, "assets", "meta_analysis"), join=true)
     )
     metal_results = CSV.read(
-        joinpath(TESTDIR, "assets", "gwas", "meta_analysis", "AFR.SEVERE_PNEUMONIA.gwas.tsv"), 
+        joinpath(TESTDIR, "assets", "meta_analysis", "AFR.SEVERE_PNEUMONIA.gwas.tsv"), 
         DataFrame, 
         delim="\t", 
         select=[:ID]
@@ -68,7 +68,7 @@ end
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "gwas.meta_analysis")
     gwas_results_list_file = joinpath(tmpdir, "regenie_files_list.txt")
-    regenie_files_list = readdir(joinpath(TESTDIR, "assets", "gwas", "meta_analysis"), join=true)
+    regenie_files_list = readdir(joinpath(TESTDIR, "assets", "meta_analysis"), join=true)
     open(gwas_results_list_file, "w") do io
         for f in regenie_files_list
             println(io, f)

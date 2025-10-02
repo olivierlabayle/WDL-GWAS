@@ -21,7 +21,7 @@ struct RegenieStep1Files {
 
 workflow gwas {
     input {
-        String docker_image = "olivierlabayle/wdl-gwas:analysis_workflow"
+        String docker_image = "olivierlabayle/wdl-gwas:main"
         File covariates_file
         PLINKFileset genotypes
         Array[PGENFileset]+ imputed_genotypes

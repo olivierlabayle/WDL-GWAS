@@ -75,10 +75,10 @@ end
 end
 
 @testset "Integration Test: finemap_significant_regions" begin
-    gwas_results_file = joinpath(TESTDIR, "assets", "gwas", "results", "regenie.results.group.phenotype.tsv")
-    pgen_prefix = joinpath(TESTDIR, "assets", "gwas", "imputed", "chr1.qced")
-    sample_file = joinpath(TESTDIR, "assets", "gwas", "results", "sample_file.txt")
-    covariates_file = joinpath(TESTDIR, "assets", "gwas", "covariates", "ukb_genomicc.covariates.csv")
+    gwas_results_file = joinpath(TESTDIR, "assets", "results", "regenie.results.group.phenotype.tsv")
+    pgen_prefix = joinpath(TESTDIR, "assets", "imputed", "chr1.qced")
+    sample_file = joinpath(TESTDIR, "assets", "results", "sample_file.txt")
+    covariates_file = joinpath(TESTDIR, "assets", "covariates", "covariates.csv")
     tmpdir = mktempdir()
 
     gwas_results = CSV.read(gwas_results_file, DataFrame)
@@ -161,7 +161,7 @@ end
     finemap_window_kb = 30_000
     locus = ["chr1:40310265:G:A", 0.88379, 40310265-finemap_window_kb*1000, 40310265+finemap_window_kb*1000]
     locus_id, _, locus_start, locus_end = locus
-    pgen_prefix = joinpath(TESTDIR, "assets", "gwas", "imputed", "chr1.qced")
+    pgen_prefix = joinpath(TESTDIR, "assets", "imputed", "chr1.qced")
     p = 3
     # Test function components
     ld_variants = PopGen.get_locus_variants_r2(locus_id, pgen_prefix; ld_window_kb=finemap_window_kb)
@@ -209,7 +209,7 @@ end
     finemap_window_kb = 30_000
     locus = ["chr1:40310265:G:A", 0.88379, 40310265-finemap_window_kb*1000, 40310265+finemap_window_kb*1000]
     locus_id, _, locus_start, locus_end = locus
-    pgen_prefix = joinpath(TESTDIR, "assets", "gwas", "imputed", "chr1.qced")
+    pgen_prefix = joinpath(TESTDIR, "assets", "imputed", "chr1.qced")
     p = 3
     n = 10
     # Get LD matrix
@@ -252,14 +252,14 @@ end
 @testset "Test region_plot" begin
     finemapping_results = PopGen.harmonize_finemapping_results(
             CSV.read(
-        joinpath(TESTDIR, "assets", "gwas", "results", "results.all_chr.EUR.SEVERE_COVID_19.finemapping.tsv"), 
+        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.finemapping.tsv"), 
         DataFrame; 
         delim="\t"
     ))
     finemapping_results = finemapping_results[finemapping_results.LOCUS_ID .== "rs7515509", :]
     gwas_results = PopGen.harmonize_gwas_results(
             CSV.read(
-        joinpath(TESTDIR, "assets", "gwas", "results", "results.all_chr.EUR.SEVERE_COVID_19.gwas.tsv"), 
+        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.gwas.tsv"), 
         DataFrame; 
         delim="\t"
     ))
