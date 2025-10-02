@@ -216,7 +216,7 @@ end
 function julia_main()::Cint
     settings = parse_args(ARGS, cli_settings())
     cmd = settings["%COMMAND%"]
-    @info "Running GenOMICC Workflows: $cmd"
+    @info "Running WDL-GWAS CLI: $cmd"
     cmd_settings = settings[cmd]
     if cmd == "make-gwas-groups"
         make_gwas_groups(

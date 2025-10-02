@@ -21,7 +21,7 @@ struct RegenieStep1Files {
 
 workflow gwas {
     input {
-        String docker_image = "olivierlabayle/genomicc:analysis_workflow"
+        String docker_image = "olivierlabayle/wdl-gwas:analysis_workflow"
         File covariates_file
         PLINKFileset genotypes
         Array[PGENFileset]+ imputed_genotypes
@@ -301,14 +301,14 @@ task get_julia_cmd {
         String threads = "auto"
     }
     command <<<
-        julia_cmd_string="julia --project=/opt/genomicc-workflows --startup-file=no"
+        julia_cmd_string="julia --project=/opt/PopGen --startup-file=no"
         if [[ "~{use_sysimage}" == "true" ]]; then
-            julia_cmd_string+=" --sysimage=/opt/genomicc-workflows/GenomiccWorkflows.so"
+            julia_cmd_string+=" --sysimage=/opt/PopGen/sysimage.so"
         fi
         if [[ "~{threads}" == "auto" ]]; then
             julia_cmd_string+=" --threads=auto"
         fi
-        julia_cmd_string+=" /opt/genomicc-workflows/bin/genomicc.jl"
+        julia_cmd_string+=" /opt/PopGen/bin/wdl-gwas.jl"
         echo "$julia_cmd_string"
     >>>
 

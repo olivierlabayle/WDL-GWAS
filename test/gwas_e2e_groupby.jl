@@ -7,11 +7,11 @@ module TestGWASE2E2
 # - meta analysis is performed and the AMR group is excluded from it
 
 using Test
-using GenomiccWorkflows
+using PopGen
 using DataFrames
 using CSV
 
-PKGDIR = pkgdir(GenomiccWorkflows)
+PKGDIR = pkgdir(PopGen)
 TESTDIR = joinpath(PKGDIR, "test")
 
 function dir_contains_subdir(dir_name, subdir_name)
