@@ -1,3 +1,4 @@
 /Manifest*.toml
 cromwell-executions/
 cromwell-workflow-logs/
+docs/build/

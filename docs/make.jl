@@ -1,10 +1,6 @@
-using PopGen
 using Documenter
 
-DocMeta.setdocmeta!(PopGen, :DocTestSetup, :(using PopGen); recursive=true)
-
 makedocs(;
-    modules=[PopGen],
     authors="Olivier Labayle <olabayle@gmail.com> and contributors",
     sitename="WDL-GWAS",
     format=Documenter.HTML(;
@@ -14,10 +10,18 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Tutorials" => [
+            "WDL-GWAS Locally" => "tutorials/local_run.md",
+            "WDL-GWAS on UKBiobank RAP" => "tutorials/ukb_run.md",
+        ],
+        "Workflow Parameters" => "parameters.md",
+        "Troobleshooting" => "troubleshooting.md",
+        "Contributing and Reporting" => "contributing.md",
     ],
 )
 
 deploydocs(;
     repo="github.com/olivierlabayle/WDL-GWAS",
     devbranch="main",
+    push_preview=true
 )

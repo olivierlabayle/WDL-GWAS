@@ -15,7 +15,7 @@ function cli_settings()
             action = :command
             help = "Runs fine-mapping analysis."
 
-        "gwas-plots"
+        "make-plots"
             action = :command
             help = "Generates GWAS plots."
 
@@ -134,7 +134,7 @@ function cli_settings()
             default = "results.all_chr"
     end
 
-    @add_arg_table! s["gwas-plots"] begin
+    @add_arg_table! s["make-plots"] begin
         "gwas-results"
             arg_type = String
             required = true
@@ -234,8 +234,8 @@ function julia_main()::Cint
             cmd_settings["pcs-prefix"];
             output=cmd_settings["output"]
         )
-    elseif cmd == "gwas-plots"
-        gwas_plots(
+    elseif cmd == "make-plots"
+        make_plots(
             cmd_settings["gwas-results"],
             cmd_settings["finemapping-results"];
             maf=cmd_settings["maf"],

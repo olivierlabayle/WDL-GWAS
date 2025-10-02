@@ -63,11 +63,11 @@ end
     @test fig !== nothing
 end
 
-@testset "Test gwas_plots" begin
+@testset "Test make_plots" begin
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "plot")
     copy!(ARGS,[
-        "gwas-plots", 
+        "make-plots", 
         joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.gwas.tsv"), 
         joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.finemapping.tsv"), 
         "--maf=0.01",

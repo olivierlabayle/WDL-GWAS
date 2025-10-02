@@ -214,13 +214,14 @@ workflow gwas {
         }
 
         # Generate GWAS plots
-        call gwas_plots as gwas_group_plots {
+        call make_plots as gwas_group_plots {
             input:
                 docker_image = docker_image,
                 julia_cmd = get_julia_cmd.julia_cmd,
                 gwas_results = merge_gwas_group_chr_results.merged_results,
                 finemapping_results = merge_fp_group_chr_results.merged_results,
-                maf = maf
+                maf = maf,
+                output_prefix = group_name
         }
     }
 
@@ -271,13 +272,14 @@ workflow gwas {
                     results_files = finemapping_summary_stats.finemapping_results
             }
 
-            call gwas_plots as gwas_meta_plots {
+            call make_plots as gwas_meta_plots {
                 input:
                     docker_image = docker_image,
                     julia_cmd = get_julia_cmd.julia_cmd,
                     gwas_results = meta_gwas_result,
                     finemapping_results = merge_fp_meta_chr_results.merged_results,
-                    maf = maf
+                    maf = maf,
+                    output_prefix = "META_ANALYSIS." + phenotype
             }
         }
 
@@ -361,17 +363,18 @@ task ld_prune {
     }
 }
 
-task gwas_plots {
+task make_plots {
     input {
         String docker_image
         String julia_cmd
         File gwas_results
         File finemapping_results
         String maf = "0.01"
+        String output_prefix
     }
 
     command <<<
-        ~{julia_cmd} gwas-plots \
+        ~{julia_cmd} make-plots \
             ~{gwas_results} \
             ~{finemapping_results} \
             --maf=~{maf} \
@@ -379,7 +382,7 @@ task gwas_plots {
     >>>
 
     output {
-        Array[File] plots = glob("gwas.plot*")
+        Array[File] plots = glob("*.png")
     }
 
     runtime {
