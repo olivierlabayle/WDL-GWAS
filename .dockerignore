@@ -1,3 +1,6 @@
-/Manifest*.toml
+test/
+assets/
+docs/
+config/
 cromwell-executions/
 cromwell-workflow-logs/
