@@ -1,8 +1,8 @@
 # WDL-GWAS
 
-## Purpose
+## Overview
 
-This [repository](https://github.com/olivierlabayle/WDL-GWAS) provides a WDL workflow that can be used to run reproducible genome-wide association studies and fine-mapping on the UKBiobank RAP and elsewhere.
+With the UK Biobank RAP now serving as the exclusive access point to UK Biobank data, conducting large-scale statistical genetics analyses has become more complex. This [repository](https://github.com/olivierlabayle/WDL-GWAS) offers a fully reproducible WDL workflow (RAP-compatible) for genome-wide association studies and fine-mapping, designed to run seamlessly on the RAP and adaptable for use in other computing environments.
 
 !["Workflow"](assets/wdl-gwas-workflow.png)
 

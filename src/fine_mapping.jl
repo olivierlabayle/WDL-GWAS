@@ -181,7 +181,11 @@ function get_locus_variants_r2(variant_id, pgen_prefix; ld_window_kb=1000)
         --ld-window-r2 0 \
         --out $out_prefix
     `)
-    return CSV.read(out_prefix * ".vcor", DataFrame, delim='\t')
+    variants_r2 = CSV.read(out_prefix * ".vcor", DataFrame, delim='\t')
+    # add the lead variant with R2=1.0 to itself
+    row = variants_r2[1, :]
+    push!(variants_r2, [row["#CHROM_A"], row.POS_A, row.ID_A, row["#CHROM_A"], row.POS_A, row.ID_A, 1.0])
+    return sort!(variants_r2, :POS_B)
 end
 
 update_credible_sets!(cs_vector, variant_idx::Int, cs::Symbol) = cs_vector[variant_idx] = parse(Int, replace(string(cs), "L" => ""))
@@ -205,6 +209,9 @@ function get_credible_sets(susie_results, p)
     return cs_vector
 end
 
+"""
+A locus is a vector of: [ID, NEG_LOG10_P, LOCUS_START, LOCUS_END]
+"""
 function get_loci_to_finemap(sig_clumps; window_kb=500)
     sig_clumps = sort(sig_clumps, :POS)
     loci = []
@@ -234,8 +241,6 @@ function postprocess_finemapping_results!(variants_info, finemapping_results, ld
     variants_info.LOCUS_ID = fill(locus_id, p)
     variants_info.CS = get_credible_sets(finemapping_results, p)
     leftjoin!(variants_info, ld_variants[!, [:ID_B, :PHASED_R2]], on=:ID => :ID_B)
-    lead_row_idx = only(findall(ismissing, variants_info.PHASED_R2))
-    variants_info.PHASED_R2[lead_row_idx] = 1.0
     return select!(variants_info, :CHROM, :POS, :ID, :REF, :ALT, :LOCUS_ID, :PIP, :CS, :PHASED_R2)
 end
 
@@ -254,22 +259,21 @@ function finemap_locus(locus, pgen_prefix, y_df;
     return postprocess_finemapping_results!(variants_info, finemapping_results, ld_variants)
 end
 
-function get_LD_matrix(pgen_prefix, locus)
-    locus_id, _, locus_start, locus_end = locus
-    chr = replace(split(locus_id, ":")[1], "chr" => "")
+function get_LD_matrix(pgen_prefix, ld_variants)
+    chr = first(ld_variants.CHROM_B)
+    min_pos, max_pos = extrema(ld_variants.POS_B)
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "ld_matrix")
     run(`plink2 \
         --pfile $pgen_prefix \
-        --keep-allele-order \
-        --r-phased square \
+        --r-unphased square \
         --chr $chr \
-        --from-bp $locus_start \
-        --to-bp $locus_end \
+        --from-bp $min_pos \
+        --to-bp $max_pos \
         --out $output_prefix`
     )
-    R = readdlm(string(output_prefix, ".phased.vcor1"))
-    variants = readlines(string(output_prefix, ".phased.vcor1.vars"))
+    R = readdlm(string(output_prefix, ".unphased.vcor1"))
+    variants = readlines(string(output_prefix, ".unphased.vcor1.vars"))
     rm(tmpdir, recursive=true)
     return R, variants
 end
@@ -313,7 +317,7 @@ function finemap_locus_rss(locus, gwas_results, pgen_prefix, y;
             )
     locus_id, _ = locus
     ld_variants = get_locus_variants_r2(locus_id, pgen_prefix; ld_window_kb=finemap_window_kb)
-    R, variants = get_LD_matrix(pgen_prefix, locus)
+    R, variants = get_LD_matrix(pgen_prefix, ld_variants)
     variants_info = initialize_variants_info_rss(pgen_prefix, variants, gwas_results)
     finemapping_results = susie_rss_finemap(R, variants_info, y; n_causal=n_causal)
     return postprocess_finemapping_results!(variants_info, finemapping_results, ld_variants)

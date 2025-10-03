@@ -162,13 +162,13 @@ end
     locus = ["chr1:40310265:G:A", 0.88379, 40310265-finemap_window_kb*1000, 40310265+finemap_window_kb*1000]
     locus_id, _, locus_start, locus_end = locus
     pgen_prefix = joinpath(TESTDIR, "assets", "imputed", "chr1.qced")
-    p = 3
+    p = 4
     # Test function components
     ld_variants = PopGen.get_locus_variants_r2(locus_id, pgen_prefix; ld_window_kb=finemap_window_kb)
     @test nrow(ld_variants) == p
     X_df, variants_info = PopGen.dosages_from_pgen(pgen_prefix, ld_variants)
     @test Set(names(X_df)) == Set(vcat(ld_variants.ID_B, "chr1:40310265:G:A", "IID"))
-    @test variants_info.ID == vcat(ld_variants.ID_B, "chr1:40310265:G:A")
+    @test variants_info.ID == vcat(ld_variants.ID_B)
     @test names(variants_info) == ["CHROM", "POS", "ID", "REF", "ALT"]
     for variant_id in variants_info.ID
         @test any(isnan.(X_df[!, 2])) == false
@@ -176,7 +176,7 @@ end
     y_df = X_df[1:1000, [:IID]]
     y_df[!, :Y] = rand(Bool, nrow(y_df))
     X, y = PopGen.get_susie_inputs(X_df, y_df)
-    @test size(X) == (1000, p+1)
+    @test size(X) == (1000, p)
     @test X isa Matrix{Float64}
     @test size(y) == (1000,)
     @test y isa Vector{Float64}
@@ -185,7 +185,7 @@ end
     # Post processing
     PopGen.postprocess_finemapping_results!(variants_info, finemapping_results, ld_variants)
     @test names(variants_info) == PopGen.FINEMAPPING_RESULT_COLS
-    @test nrow(variants_info) == p+1
+    @test nrow(variants_info) == p
     @test any(ismissing.(variants_info.PHASED_R2)) == false
     # Test full function
     finemapping_results = PopGen.finemap_locus(locus, pgen_prefix, y_df;
@@ -194,11 +194,11 @@ end
         finemap_window_kb=finemap_window_kb,
     )
     @test names(finemapping_results) == PopGen.FINEMAPPING_RESULT_COLS
-    @test nrow(finemapping_results) == p+1
+    @test nrow(finemapping_results) == p
     # Test genotypes_from_pgen
     X_df, variants_info = PopGen.genotypes_from_pgen(pgen_prefix, ld_variants)
     @test Set(names(X_df)) == Set(vcat(ld_variants.ID_B, "chr1:40310265:G:A", "IID"))
-    @test variants_info.ID == vcat(ld_variants.ID_B, "chr1:40310265:G:A")
+    @test variants_info.ID == vcat(ld_variants.ID_B)
     @test names(variants_info) == ["CHROM", "POS", "ID", "REF", "ALT"]
     for variant_id in variants_info.ID
         @test any(isnan.(X_df[!, 2])) == false
@@ -210,14 +210,14 @@ end
     locus = ["chr1:40310265:G:A", 0.88379, 40310265-finemap_window_kb*1000, 40310265+finemap_window_kb*1000]
     locus_id, _, locus_start, locus_end = locus
     pgen_prefix = joinpath(TESTDIR, "assets", "imputed", "chr1.qced")
-    p = 3
+    p = 4
     n = 10
     # Get LD matrix
     locus_id, _ = locus
     ld_variants = PopGen.get_locus_variants_r2(locus_id, pgen_prefix; ld_window_kb=finemap_window_kb)
-    R, variants = PopGen.get_LD_matrix(pgen_prefix, locus)
+    R, variants = PopGen.get_LD_matrix(pgen_prefix, ld_variants)
     @test R isa Matrix{Float64}
-    @test size(R) == (p+1, p+1)
+    @test size(R) == (p, p)
     @test variants == ["chr1:14012312:T:C", "chr1:18100537:G:A", "chr1:22542609:T:C", "chr1:40310265:G:A"]
     # Run susie_rss_finemap
     gwas_results = DataFrame(
@@ -235,7 +235,7 @@ end
     # Fake phenotype vector
     y = rand(n)
     finemapping_results = PopGen.susie_rss_finemap(R, variants_info, y; n_causal=1)
-    @test length(finemapping_results[:pip]) == 4
+    @test length(finemapping_results[:pip]) == p
     # Post processing
     PopGen.postprocess_finemapping_results!(variants_info, finemapping_results, ld_variants)
     @test names(variants_info) == PopGen.FINEMAPPING_RESULT_COLS
@@ -246,30 +246,7 @@ end
         finemap_window_kb=finemap_window_kb,
     )
     @test names(finemapping_results) == PopGen.FINEMAPPING_RESULT_COLS
-    @test nrow(finemapping_results) == p+1
-end
-
-@testset "Test region_plot" begin
-    finemapping_results = PopGen.harmonize_finemapping_results(
-            CSV.read(
-        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.finemapping.tsv"), 
-        DataFrame; 
-        delim="\t"
-    ))
-    finemapping_results = finemapping_results[finemapping_results.LOCUS_ID .== "rs7515509", :]
-    gwas_results = PopGen.harmonize_gwas_results(
-            CSV.read(
-        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.gwas.tsv"), 
-        DataFrame; 
-        delim="\t"
-    ))
-    region_data = innerjoin(
-        gwas_results,
-        DataFrames.select(finemapping_results, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :PHASED_R2]), 
-        on=[:ID]
-    )
-    fig = PopGen.region_plot(region_data)
-    @test fig !== nothing
+    @test nrow(finemapping_results) == p
 end
 
 

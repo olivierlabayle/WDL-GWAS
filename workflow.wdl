@@ -378,7 +378,7 @@ task make_plots {
             ~{gwas_results} \
             ~{finemapping_results} \
             --maf=~{maf} \
-            --output-prefix=gwas.plot
+            --output-prefix=~{output_prefix}
     >>>
 
     output {

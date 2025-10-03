@@ -3,7 +3,7 @@ module TestGWASE2E2
 # This end to end test runs with the following conditions:
 # - a grouped analysis defined by the SUPERPOPULATION column
 # - two binary phenotypes: SEVERE_COVID_19 and SEVERE_PNEUMONIA
-# - finemapping threhsolds have been lowered to be effectively performed
+# - finemapping thresholds have been lowered to be effectively performed
 # - meta analysis is performed and the AMR group is excluded from it
 
 using Test
@@ -33,7 +33,7 @@ cmd_args = ["-jar", ENV["CROMWELL_PATH"]]
 
 cmd = Cmd([
     "java", cmd_args...,
-    "run", "workflow.wdl",
+    "run", joinpath(PKGDIR, "workflow.wdl"),
     "--inputs", joinpath(TESTDIR, "assets", "config", "gwas.bygroup.json"),
 ])
 
@@ -224,7 +224,7 @@ for group_shard in 0:5
     files = readdir(execution_dir)
     plot_files = filter(endswith(".png"), files)
     @test length(plot_files) >= 2
-    _, _, ancestry, phenotype, _ = split(first(plot_files), ".")
+    ancestry, phenotype, _ = split(first(plot_files), ".")
     push!(plots_groups, "$ancestry.$phenotype")
 end
 @test plots_groups == expected_groups
