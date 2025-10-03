@@ -3,3 +3,5 @@ cromwell-executions/
 cromwell-workflow-logs/
 docs/build/
 sandbox.jl
+config/genomicc*
+local_gwas_outputs/

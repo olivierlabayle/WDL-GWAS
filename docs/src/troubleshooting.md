@@ -1,5 +1,10 @@
 # Troubleshooting
 
+
+## Understanding Local Workflow failures
+
+Cromwell's logs are quite dense and difficult to navigate, when the workflow errors, look for a filename ending in `execution/stderr`. This file will contain more information on the error.
+
 ## Running Interactively on UKBiobank RAP
 
 To debug errors, it may be useful to run the code interactively, for this, you can use the [Cloud Workstation](https://documentation.dnanexus.com/developer/cloud-workstation). This [tutorial](https://academy.dnanexus.com/interactivecloudcomputing/cloudworkstation) may also be useful. To start an instance:

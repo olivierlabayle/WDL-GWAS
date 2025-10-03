@@ -2,15 +2,18 @@
 
 ## Overview
 
-With the UK Biobank RAP now serving as the exclusive access point to UK Biobank data, conducting large-scale statistical genetics analyses has become more complex. This [repository](https://github.com/olivierlabayle/WDL-GWAS) offers a fully reproducible WDL workflow (RAP-compatible) for genome-wide association studies and fine-mapping, designed to run seamlessly on the RAP and adaptable for use in other computing environments.
+With the [UK Biobank RAP](https://www.ukbiobank.ac.uk/use-our-data/research-analysis-platform/) now serving as the exclusive access point to UK Biobank data, conducting large-scale statistical genetics analyses has become more complex. This [repository](https://github.com/olivierlabayle/WDL-GWAS) offers a fully reproducible WDL workflow (RAP-compatible) for genome-wide association studies and fine-mapping, designed to run seamlessly on the RAP and adaptable for use in other computing environments.
 
 !["Workflow"](assets/wdl-gwas-workflow.png)
 
 ## Installation
 
+The workflow ca be run on linux platforms and macOS. However, for the later, you will need to change the local backend provider to run the workflow locally (see: [Running WDL-GWAS Locally](@ref)).
+
 All dependencies require:
 
 - Java, which can be installed with [sdkman](https://sdkman.io/install/).
+- [Docker](https://docs.docker.com/engine/install/)
 - This repository which you can obtain [here](https://github.com/olivierlabayle/WDL-GWAS/releases).
 
 ### Installation for Local Usage

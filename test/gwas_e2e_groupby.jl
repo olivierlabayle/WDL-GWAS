@@ -29,7 +29,7 @@ function dir_contains_subdir(dir_name, subdir_name)
 end
 
 cmd_args = ["-jar", ENV["CROMWELL_PATH"]]
-# cmd_args = ["-Dconfig.file=config/cromwell.local-olivier.conf", "-jar", "/Users/olabayle/cromwell/cromwell-90.jar"]
+# cmd_args = ["-Dconfig.file=config/cromwell.macOS-dev.conf", "-jar", "/Users/olabayle/cromwell/cromwell-90.jar"]
 
 cmd = Cmd([
     "java", cmd_args...,
