@@ -107,7 +107,7 @@ function read_and_process_covariates(covariates_file;
     covariates_string=nothing
     )
     # Read the covariates file
-    covariates = CSV.read(covariates_file, DataFrame)
+    covariates = CSV.read(covariates_file, DataFrame; missingstring=["", "NA", "NULL", "NAN"])
     # Add user defined covariates
     required_covariate_variables = add_user_defined_covariates!(covariates, covariates_string)
 
