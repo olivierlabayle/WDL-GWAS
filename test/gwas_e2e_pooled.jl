@@ -23,7 +23,10 @@ cmd = Cmd([
     "--options", joinpath(TESTDIR, "assets", "config", "gwas.pooled.options.json")
 ])
 
-run(cmd)
+# Run the workflow from the package directory
+cd(PKGDIR) do
+    run(cmd)
+end
 
 results_dirs = readdir("gwas_pooled_outputs/gwas/", join=true)
 results_dir = results_dirs[argmax(mtime(d) for d in results_dirs)]

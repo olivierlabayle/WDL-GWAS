@@ -37,7 +37,10 @@ cmd = Cmd([
     "--inputs", joinpath(TESTDIR, "assets", "config", "gwas.bygroup.json"),
 ])
 
-rc = run(cmd)
+# Run the workflow from the package directory
+cd(PKGDIR) do
+    rc = run(cmd)
+end
 
 @test rc.exitcode == 0
 
