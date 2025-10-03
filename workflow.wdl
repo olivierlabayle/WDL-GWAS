@@ -31,7 +31,6 @@ workflow gwas {
         Array[String] phenotypes = ["SEVERE_COVID_19"]
         String julia_use_sysimage = "true"
         String julia_threads = "auto"
-        File high_ld_regions = "assets/exclude_b38.txt"
         # QC parameters
         String min_cases_controls = "10"
         String npcs = "10"
@@ -99,7 +98,6 @@ workflow gwas {
         call ld_prune as groups_ld_prune {
             input:
                 docker_image = docker_image,
-                high_ld_regions = high_ld_regions,
                 chr = make_group_bed_qced.plink_fileset.chr,
                 bed_file = make_group_bed_qced.plink_fileset.bed,
                 bim_file = make_group_bed_qced.plink_fileset.bim,
@@ -322,7 +320,6 @@ task get_julia_cmd {
 task ld_prune {
     input {
         String docker_image
-        File high_ld_regions
         String chr
         File bed_file
         File bim_file
@@ -338,13 +335,13 @@ task ld_prune {
         plink2 \
             --bfile ${bed_prefix} \
             --indep-pairwise ~{ip_values}
-        
+        # Always exclude high LD regions stored in the docker image at /opt/PopGen/assets/exclude_b38.txt
         plink2 \
             --bfile ${bed_prefix} \
             --extract plink2.prune.in \
             --maf ~{maf} \
             --make-bed \
-            --exclude range ~{high_ld_regions} \
+            --exclude range /opt/PopGen/assets/exclude_b38.txt \
             --out ~{output_prefix}
     >>>
 

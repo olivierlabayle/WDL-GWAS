@@ -41,6 +41,5 @@
             "psam": "test/assets/imputed/chr3.qced.psam",
             "pvar": "test/assets/imputed/chr3.qced.pvar"
         }
-    ],
-    "gwas.high_ld_regions": "assets/exclude_b38.txt"
+    ]
 }

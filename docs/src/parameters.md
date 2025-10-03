@@ -9,7 +9,6 @@
 - `covariates` (default: ["AGE", "SEX", "AGE_x_AGE", "AGE_x_SEX"]): A set of covariates used to adjust for confounding or increase power in the association testing step. Product of variables can be defined using the `_x_` syntax, for example: ["AGE", "SEX", "AGE_x_SEX", "AGE_x_AGE"].
 - `phenotypes`: A set of phenotypes for which a GWAS will be run independently.
 - `min_cases_controls` (default: 10): Minimum number of phenotype cases/controls within a group to proceed to GWAS.
-- `high_ld_regions`: File containing high LD regions to be excluded when performing LD pruning for PCA. The file is stored in `assets/exclude_b38.txt` and needs to be uploaded to the RAP.
 - `ip_values` (default: "1000 50 0.05"): Values used to create independent genotypes for PCA (see [here](https://www.cog-genomics.org/plink/2.0/ld)).
 - `npcs` (default 10): Number of principal components to use to account for population structure.
 - `approx_pca` (default: true): Whether to use an approximation to the PCA algorithm (see [here](https://www.cog-genomics.org/plink/2.0/strat)).
