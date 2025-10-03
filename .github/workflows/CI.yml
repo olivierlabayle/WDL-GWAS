@@ -5,6 +5,8 @@ on:
       - "**"
     tags: ['*']
   workflow_dispatch:
+  release:
+    types: [published]
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
