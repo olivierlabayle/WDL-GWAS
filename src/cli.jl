@@ -23,7 +23,7 @@ function cli_settings()
             action = :command
             help = "Runs PCAb-ased QC on genotypes to exclude outlier variants."
 
-        "make-gwas-groups"
+        "make-groups-and-covariates"
             action = :command
             help = "Generates groups, phenotypes and covariates files."
         
@@ -173,7 +173,7 @@ function cli_settings()
             default = "covariates_and_pcs.csv"
     end
 
-    @add_arg_table! s["make-gwas-groups"] begin
+    @add_arg_table! s["make-groups-and-covariates"] begin
         "covariates-file"
             arg_type = String
             required = true
@@ -218,8 +218,8 @@ function julia_main()::Cint
     cmd = settings["%COMMAND%"]
     @info "Running WDL-GWAS CLI: $cmd"
     cmd_settings = settings[cmd]
-    if cmd == "make-gwas-groups"
-        make_gwas_groups(
+    if cmd == "make-groups-and-covariates"
+        make_groups_and_covariates(
             cmd_settings["covariates-file"];
             groupby_string=cmd_settings["groupby"],
             covariates_string=cmd_settings["covariates"],

@@ -818,7 +818,7 @@ task make_covariates_and_groups {
         covariates_string='~{sep="," covariates}'
 
         ~{julia_cmd} \
-            make-gwas-groups \
+            make-groups-and-covariates \
             ~{covariates_file} \
             --covariates=${covariates_string} \
             --phenotypes=~{sep="," phenotypes_list} \

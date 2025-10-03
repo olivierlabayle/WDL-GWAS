@@ -8,6 +8,27 @@ using CSV
 PKGDIR = pkgdir(PopGen)
 TESTDIR = joinpath(PKGDIR, "test")
 
+@testset "Test is_binary_column" begin
+    df = DataFrame(
+        A = [0, 1, 0, 1, missing], 
+        B = [0, 1, 2, 1, 0], 
+        C = ["a", "b", "a", "b", "a"]
+    )
+    @test PopGen.is_binary_column(df, :A) == true
+    @test PopGen.is_binary_column(df, :B) == false
+    @test PopGen.is_binary_column(df, :C) == false
+end
+
+@testset "Test n_cases_controls" begin
+    df = DataFrame(
+        PHENO = [0, 1, 1, 0, 1, missing, 0, 0, 1, 1],
+        AGE = [25, 35, 45, 55, 65, 75, 85, missing, 50, 60]
+    )
+    ncases, ncontrols = PopGen.n_cases_controls(df, :PHENO)
+    @test ncases == 5
+    @test ncontrols == 4
+end
+
 @testset "Test apply_filter" begin
     data = DataFrame(
         COHORT = ["FUTURE_HEALTH", "FUTURE_HEALTH", "UKB", "UKB", "UKB", "UKB", "UKB", "UKB", "UKB", "UKB"],
@@ -29,13 +50,13 @@ TESTDIR = joinpath(PKGDIR, "test")
     @test filter_age_ukb.AGE == [55, 65, 75, 50, 60]
 end
 
-@testset "Test make-gwas-groups" begin
+@testset "Test make-groups-and-covariates" begin
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "gwas")
     covariates_file = joinpath(TESTDIR, "assets", "covariates", "covariates.csv")
     min_cases_controls = 200
     copy!(ARGS, [
-        "make-gwas-groups", 
+        "make-groups-and-covariates", 
         covariates_file,
         "--groupby=SUPERPOPULATION,SEX",
         "--phenotypes=SEVERE_COVID_19",
@@ -108,13 +129,13 @@ end
     end
 end
 
-@testset "Test make-gwas-groups: no groups with filter" begin
+@testset "Test make-groups-and-covariates: no groups with filter" begin
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "gwas_all")
     covariates_file = joinpath(TESTDIR, "assets", "covariates", "covariates.csv")
     min_cases_controls = 2500
     copy!(ARGS, [
-        "make-gwas-groups", 
+        "make-groups-and-covariates", 
         covariates_file,
         "--output-prefix", output_prefix,
         "--phenotypes=SEVERE_COVID_19,SEVERE_PNEUMONIA",

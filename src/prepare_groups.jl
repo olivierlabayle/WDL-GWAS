@@ -60,6 +60,20 @@ function apply_filters(data, filters_string::AbstractString)
     return data
 end
 
+is_binary_column(data, column) =
+    Set(skipmissing(data[!, column])) == Set([0, 1])
+
+function n_cases_controls(data_no_missing, phenotype)
+    group_cases_controls_df = combine(groupby(data_no_missing, phenotype, skipmissing=true), nrow)
+    group_cases_controls_dict = Dict(
+        string(val) => n for (val, n) in 
+            zip(group_cases_controls_df[!, phenotype], group_cases_controls_df.nrow)
+    )
+    ncases = get(group_cases_controls_dict, "1", 0)
+    ncontrols = get(group_cases_controls_dict, "0", 0)
+    return ncases, ncontrols
+end
+
 function write_covariates_and_phenotypes_group(data, covariates_list; 
     group_id="all", 
     phenotypes=["SEVERE_COVID_19"], 
@@ -71,22 +85,19 @@ function write_covariates_and_phenotypes_group(data, covariates_list;
     n_phenotypes_passed = 0
     for phenotype in phenotypes
         data_no_missing = dropmissing(data, [phenotype, covariates_list...])
-        group_cases_controls_df = combine(groupby(data_no_missing, phenotype, skipmissing=true), nrow)
-        group_cases_controls_dict = Dict(
-            string(val) => n for (val, n) in 
-                zip(group_cases_controls_df[!, phenotype], group_cases_controls_df.nrow)
-        )
-        ncases = get(group_cases_controls_dict, "1", 0)
-        ncontrols = get(group_cases_controls_dict, "0", 0)
-        if ncontrols < min_cases_controls || ncases < min_cases_controls
-            @info "Skipping phenotype $phenotype for group $group_id because it has fewer than $min_cases_controls cases/controls: (cases: $(ncases), controls: $(ncontrols))."
-        else
-            CSV.write(
-                string(output_prefix, ".individuals.", group_id, ".", phenotype, ".txt"), 
-                DataFrames.select(data_no_missing, ["FID", "IID"]), header=false, delim="\t"
-            )
-            n_phenotypes_passed += 1
+        if is_binary_column(data_no_missing, phenotype)
+            ncases, ncontrols = n_cases_controls(data_no_missing, phenotype)
+            if ncontrols < min_cases_controls || ncases < min_cases_controls
+                @info "Skipping phenotype $phenotype for group $group_id because it has fewer than $min_cases_controls cases/controls: (cases: $(ncases), controls: $(ncontrols))."
+                continue
+            end
         end
+
+        CSV.write(
+            string(output_prefix, ".individuals.", group_id, ".", phenotype, ".txt"), 
+            DataFrames.select(data_no_missing, ["FID", "IID"]), header=false, delim="\t"
+        )
+        n_phenotypes_passed += 1
     end
 
     return n_phenotypes_passed
@@ -103,7 +114,7 @@ function read_and_process_covariates(covariates_file;
     return covariates, required_covariate_variables
 end
 
-function make_gwas_groups(
+function make_groups_and_covariates(
     covariates_file; 
     groupby_string=nothing,
     covariates_string="AGE",
