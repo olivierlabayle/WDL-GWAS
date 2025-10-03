@@ -323,16 +323,16 @@ function finemap_locus_rss(locus, gwas_results, pgen_prefix, y;
     return postprocess_finemapping_results!(variants_info, finemapping_results, ld_variants)
 end
 
-function make_clean_sample_file(input_sample_file; exclude=[], phenotype="Y", chr=1)
+function make_clean_sample_file(input_sample_file; exclude=[], phenotype="Y")
     input_lines = readlines(input_sample_file)
     if isfile(first(input_lines))
         tmpdir = mktempdir()
         output_sample_file = joinpath(tmpdir, "clean_samples.txt")
         open(output_sample_file, "w") do output_io
             for file in input_lines
-                file_group, file_pheno, file_chr_pheno, _ = split(basename(file), '.')
+                _, _, file_group, file_pheno, _ = split(basename(file), '.')
                 group_needs_exclusion(file_group, exclude) && continue
-                string("chr", chr, "_", phenotype) == file_chr_pheno || continue
+                phenotype == file_pheno || continue
                 for line in readlines(file)
                     println(output_io, line)
                 end
@@ -417,8 +417,7 @@ function finemap_significant_regions(
     pvar = CSV.read(pgen_prefix * ".pvar", DataFrame; delim='\t', comment="##")
     sample_file = make_clean_sample_file(sample_file; 
         exclude=split(exclude_string, ","), 
-        phenotype=phenotype, 
-        chr=only(unique(pvar[!, "#CHROM"]))
+        phenotype=phenotype
     )
     # Tag variant IDs that are not in the GWAS results
     @info "Tagging variants not in GWAS results"

@@ -10,13 +10,19 @@ TESTDIR = joinpath(PKGDIR, "test")
 
 @testset "Test is_binary_column" begin
     df = DataFrame(
-        A = [0, 1, 0, 1, missing], 
+        A = [0, 1, 0, 1, missing],
         B = [0, 1, 2, 1, 0], 
-        C = ["a", "b", "a", "b", "a"]
+        C = ["a", "b", "a", "b", "a"],
+        D = [missing, missing, missing, missing, missing],
+        E = [1, 1, 1, 1, 1],
+        F = [0, 0, 0, 0, 0]
     )
     @test PopGen.is_binary_column(df, :A) == true
     @test PopGen.is_binary_column(df, :B) == false
     @test PopGen.is_binary_column(df, :C) == false
+    @test PopGen.is_binary_column(df, :D) == true
+    @test PopGen.is_binary_column(df, :E) == true
+    @test PopGen.is_binary_column(df, :F) == true
 end
 
 @testset "Test n_cases_controls" begin

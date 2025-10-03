@@ -17,26 +17,24 @@ TESTDIR = joinpath(PKGDIR, "test")
     end
     @test PopGen.make_clean_sample_file(sample_file) == sample_file
     # The file contains a list of files containing sample ids written by REGENIE
-    sample_file_1 = joinpath(tmpdir, "EUR.PHENO_1.chr1_PHENO_1.txt")
+    sample_file_1 = joinpath(tmpdir, "gwas.individual_ids.EUR.PHENO_1.txt")
     write(sample_file_1, "odap1\todap1")
-    sample_file_2 = joinpath(tmpdir, "EUR.PHENO_1.chr2_PHENO_1.txt")
+    sample_file_2 = joinpath(tmpdir, "gwas.individual_ids.AFR.PHENO_1.txt")
     write(sample_file_2, "odap2\todap2")
-    sample_file_3 = joinpath(tmpdir, "AFR.PHENO_1.chr1_PHENO_1.txt")
+    sample_file_3 = joinpath(tmpdir, "gwas.individual_ids.AMR.PHENO_1.txt")
     write(sample_file_3, "odap3\todap3")
-    sample_file_4 = joinpath(tmpdir, "AMR.PHENO_1.chr1_PHENO_1.txt")
+    sample_file_4 = joinpath(tmpdir, "gwas.individual_ids.EUR.PHENO_2.txt")
     write(sample_file_4, "odap4\todap4")
-    sample_file_5 = joinpath(tmpdir, "EUR.PHENO_2.chr1_PHENO_2.txt")
-    write(sample_file_5, "odap5\todap5")
 
     sample_file = joinpath(tmpdir, "samples_file.txt")
     open(sample_file, "w") do io
-        for filename in [sample_file_1, sample_file_2, sample_file_3, sample_file_4, sample_file_5]
+        for filename in [sample_file_1, sample_file_2, sample_file_3, sample_file_4]
             println(io, filename)
         end
     end
 
-    output_sample_file = PopGen.make_clean_sample_file(sample_file; exclude=["AMR"], phenotype="PHENO_1", chr="1")
-    @test readlines(output_sample_file) == ["odap1\todap1", "odap3\todap3"]
+    output_sample_file = PopGen.make_clean_sample_file(sample_file; exclude=["AMR"], phenotype="PHENO_1")
+    @test readlines(output_sample_file) == ["odap1\todap1", "odap2\todap2"]
 end
 
 

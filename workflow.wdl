@@ -180,7 +180,7 @@ workflow gwas {
                     psam_file = imputed_chr_fileset.psam,
                     chr = imputed_chr_fileset.chr,
                     covariates_file = merge_covariates_and_pcs.covariates_and_pcs,
-                    sample_file = regenie_step_2.regenie_step2_ids,
+                    sample_file = sample_list,
                     Xtype = Xtype,
                     group_name = group_name,
                     min_sig_clump_size = min_sig_clump_size,
@@ -245,7 +245,7 @@ workflow gwas {
                         julia_cmd = get_julia_cmd.julia_cmd,
                         gwas_results = meta_gwas_result,
                         covariates_file = make_groups_and_covariates.updated_covariates,
-                        sample_files = flatten(regenie_step_2.regenie_step2_ids),
+                        sample_files = make_groups_and_covariates.groups_individuals,
                         pgen_file = imputed_chr_fileset.pgen,
                         pvar_file = imputed_chr_fileset.pvar,
                         psam_file = imputed_chr_fileset.psam,
@@ -632,7 +632,6 @@ task regenie_step_2 {
 
     output {
         File regenie_step2 = "${group_name}.chr${chr}_" + read_string("phenotype.txt") + ".regenie"
-        File regenie_step2_ids = "${group_name}.chr${chr}_" + read_string("phenotype.txt") + ".regenie.ids"
     }
 
     runtime {

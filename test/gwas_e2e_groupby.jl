@@ -35,14 +35,14 @@ cmd = Cmd([
     "java", cmd_args...,
     "run", joinpath(PKGDIR, "workflow.wdl"),
     "--inputs", joinpath(TESTDIR, "assets", "config", "gwas.bygroup.json"),
+    "--options", joinpath(TESTDIR, "assets", "config", "gwas.bygroup.options.json")
+
 ])
 
 # Run the workflow from the package directory
 cd(PKGDIR) do
-    rc = run(cmd)
+    run(cmd)
 end
-
-@test rc.exitcode == 0
 
 results_dirs = readdir("cromwell-executions/gwas", join=true)
 results_dir = results_dirs[argmax(mtime(d) for d in results_dirs)]

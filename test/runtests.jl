@@ -14,4 +14,5 @@ TESTDIR = joinpath(PKGDIR, "test")
 
     # End to end Tests of the WDL workflow
     @test include(joinpath(TESTDIR, "gwas_e2e_groupby.jl"))
+    @test include(joinpath(TESTDIR, "gwas_e2e_pooled.jl"))
 end

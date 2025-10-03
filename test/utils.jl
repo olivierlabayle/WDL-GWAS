@@ -8,6 +8,14 @@ using CSV
 PKGDIR = pkgdir(PopGen)
 TESTDIR = joinpath(PKGDIR, "test")
 
+@testset "Test group_needs_exclusion" begin
+    @test PopGen.group_needs_exclusion("AFR", ["AFR"])
+    @test !PopGen.group_needs_exclusion("AFR", ["EUR"])
+    @test PopGen.group_needs_exclusion("AFR_SEVERE_COVID_19", ["AFR"])
+    @test !PopGen.group_needs_exclusion("AFR_SEVERE_COVID_19", ["EUR"])
+    @test PopGen.group_needs_exclusion("AFR_SEVERE_COVID_19", ["AFR", "EUR"])
+end
+
 @testset "Test merge-covariates-pcs" begin
     tmpdir = mktempdir()
 

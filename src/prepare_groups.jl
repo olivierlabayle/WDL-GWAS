@@ -61,7 +61,7 @@ function apply_filters(data, filters_string::AbstractString)
 end
 
 is_binary_column(data, column) =
-    Set(skipmissing(data[!, column])) == Set([0, 1])
+    issubset(Set(skipmissing(data[!, column])), Set([0, 1]))
 
 function n_cases_controls(data_no_missing, phenotype)
     group_cases_controls_df = combine(groupby(data_no_missing, phenotype, skipmissing=true), nrow)
