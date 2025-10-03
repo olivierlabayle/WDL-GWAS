@@ -65,7 +65,7 @@ workflow gwas {
     }
 
     # Create groups and update covariates
-    call make_covariates_and_groups {
+    call make_groups_and_covariates {
         input:
             docker_image=docker_image,
             covariates_file=covariates_file,
@@ -79,7 +79,7 @@ workflow gwas {
 
 
     # A GWAS is performed for each group defined by a combination of the user provided `groupby` and a phenotype
-    scatter (sample_list in make_covariates_and_groups.groups_individuals) {
+    scatter (sample_list in make_groups_and_covariates.groups_individuals) {
         String group_name = sub(basename(sample_list, ".txt"), "gwas.individuals.", "")
 
         # Make plink bed files for the group 
@@ -128,7 +128,7 @@ workflow gwas {
             input:
                 docker_image = docker_image,
                 group_name = group_name,
-                covariates_file = make_covariates_and_groups.updated_covariates,
+                covariates_file = make_groups_and_covariates.updated_covariates,
                 pcs_files = loco_pca.eigenvec,
                 julia_cmd = get_julia_cmd.julia_cmd 
         }
@@ -143,7 +143,7 @@ workflow gwas {
                 fam_file = make_group_bed_qced.plink_fileset.fam,
                 sample_list = sample_list,
                 covariates_file = merge_covariates_and_pcs.covariates_and_pcs,
-                covariates_list = make_covariates_and_groups.covariates_list,
+                covariates_list = make_groups_and_covariates.covariates_list,
                 cv_folds = regenie_cv_folds,
                 bsize = regenie_bsize,
                 maf = maf,
@@ -165,7 +165,7 @@ workflow gwas {
                     covariates_file = merge_covariates_and_pcs.covariates_and_pcs,
                     regenie_loco = regenie_step_1.step1_files.phenotypes_loco,
                     regenie_list = regenie_step_1.step1_files.list,
-                    covariates_list = make_covariates_and_groups.covariates_list,
+                    covariates_list = make_groups_and_covariates.covariates_list,
                     npcs = npcs,
                     bsize = regenie_bsize,
                     mac = mac
@@ -246,7 +246,7 @@ workflow gwas {
                         docker_image = docker_image,
                         julia_cmd = get_julia_cmd.julia_cmd,
                         gwas_results = meta_gwas_result,
-                        covariates_file = make_covariates_and_groups.updated_covariates,
+                        covariates_file = make_groups_and_covariates.updated_covariates,
                         sample_files = flatten(regenie_step_2.regenie_step2_ids),
                         pgen_file = imputed_chr_fileset.pgen,
                         pvar_file = imputed_chr_fileset.pvar,
@@ -790,7 +790,7 @@ task loco_pca {
     }
 }
 
-task make_covariates_and_groups {
+task make_groups_and_covariates {
     input {
         String docker_image
         File covariates_file

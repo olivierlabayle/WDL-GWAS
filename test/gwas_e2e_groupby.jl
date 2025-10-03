@@ -52,7 +52,7 @@ expected_groups = Set([
     "SAS.SEVERE_PNEUMONIA"
 ])
 # Test groups and covariates: first see which groups make the case/control constraint
-groups_prep_dir = joinpath(results_dir, "call-make_covariates_and_groups", "execution")
+groups_prep_dir = joinpath(results_dir, "call-make_groups_and_covariates", "execution")
 covariates = CSV.read(joinpath(groups_prep_dir, "gwas.covariates.csv"), DataFrame)
 @test "AGE_x_AGE" in names(covariates)
 covid_19_groups_not_passing_cc_threshold = Set(filter(
