@@ -40,7 +40,7 @@ workflow gwas {
         String mac = "10"
         String ip_values = "1000 50 0.05"
         # Regenie parameters
-        String regenie_cv_folds = "5"
+        String regenie_cv_folds = "loocv" # or an integer
         String regenie_bsize = "1000"
         # Finemapping parameters
         String Xtype = "dosages" # or "genotypes"
@@ -687,6 +687,14 @@ task regenie_step_1 {
         # phenotype from group_name
         phenotype=$(echo ~{group_name} | cut -d'.' -f2)
 
+        # Find the type of the phenotype (quantitative or binary)
+        phenotype_col_idx=$(head -1 ~{covariates_file} | tr '\t' '\n' | grep -n ${phenotype} | cut -d: -f1)
+        uniq_vals_count=$(cut -f"${phenotype_col_idx}" ~{covariates_file} | sort -u | grep -v "NA" | wc -l)
+        trait_type="--bt"
+        if [ "${uniq_vals_count}" -gt 3 ]; then # two binary values + header
+            trait_type="--qt"
+        fi
+
         conda run -n regenie_env regenie \
             --step 1 \
             --bed ${genotypes_prefix} \
@@ -698,7 +706,7 @@ task regenie_step_1 {
             --covarColList ~{sep="," covariates_list} \
             --minMAC ~{mac} \
             ${cv_option} \
-            --bt \
+            ${trait_type} \
             --bsize ~{bsize} \
             --lowmem \
             --out ~{group_name}.step1
