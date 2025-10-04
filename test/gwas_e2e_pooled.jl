@@ -32,7 +32,7 @@ cd(PKGDIR) do
     run(cmd)
 end
 
-results_dirs = readdir("gwas_pooled_outputs/gwas/", join=true)
+results_dirs = readdir(joinpath(PKGDIR, "gwas_pooled_outputs/gwas/"), join=true)
 results_dir = results_dirs[argmax(mtime(d) for d in results_dirs)]
 
 # GWAS results
