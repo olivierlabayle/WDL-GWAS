@@ -28,11 +28,15 @@ function dir_contains_subdir(dir_name, subdir_name)
     end
 end
 
-cmd_args = ["-jar", ENV["CROMWELL_PATH"]]
-# cmd_args = ["-Dconfig.file=config/cromwell.macOS-dev.conf", "-jar", "/Users/olabayle/cromwell/cromwell-90.jar"]
+config = if Sys.isapple()
+    "-Dconfig.file=config/cromwell.macOS-dev.conf"
+else
+    "-Dconfig.file=config/cromwell.local.conf"
+end
 
 cmd = Cmd([
-    "java", cmd_args...,
+    "java", config,
+    "-jar", ENV["CROMWELL_PATH"],
     "run", joinpath(PKGDIR, "workflow.wdl"),
     "--inputs", joinpath(TESTDIR, "assets", "config", "gwas.bygroup.json"),
     "--options", joinpath(TESTDIR, "assets", "config", "gwas.bygroup.options.json")

@@ -32,7 +32,33 @@ function merge_covariates_and_pcs(covariates_file, pcs_prefix; output="covariate
     return 0
 end
 
-
 group_needs_exclusion(group, exclude) =
     any(occursin(p, group) for p in exclude)
 
+read_plink2_df(plink_file; delim='\t', comment="##") =
+    CSV.read(plink_file, DataFrame; delim=delim, comment=comment)
+
+read_pvar(pvar_file; delim='\t', comment="##") =
+    read_plink2_df(pvar_file; delim=delim, comment=comment)
+
+read_psam(psam_file; delim='\t', comment="##") =
+    read_plink2_df(psam_file; delim=delim, comment=comment)
+
+function find_plink2_header_index(file; comment="##")
+    open(file) do io
+        header_index = 1
+        while startswith(readline(io), comment)
+            header_index += 1
+        end
+        return header_index
+    end
+end
+
+function read_pgen_safe(pgen_prefix)
+    pvar_header_index = find_plink2_header_index(string(pgen_prefix, ".pvar"))
+    psam_header_index = find_plink2_header_index(string(pgen_prefix, ".psam"))
+    return Pgen(string(pgen_prefix, ".pgen"); 
+        pvar_header_lines=pvar_header_index, 
+        psam_header_lines=psam_header_index,
+    )
+end

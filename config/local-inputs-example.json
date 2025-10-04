@@ -3,7 +3,6 @@
     "gwas.regenie_cv_folds": "loocv",
     "gwas.meta_exclude": ["AMR"],
     "gwas.julia_use_sysimage": "false",
-    "gwas.docker_image": "olivierlabayle/wdl-gwas:main",
     "gwas.covariates_file": "test/assets/covariates/covariates.csv",
     "gwas.groupby": ["SUPERPOPULATION"],
     "gwas.covariates": ["AGE", "SEX", "AGE_x_AGE"],

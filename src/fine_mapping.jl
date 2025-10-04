@@ -86,7 +86,7 @@ function write_significant_clumps(pgen_prefix, gwas_results_file;
 end
 
 function genotypes_from_pgen(pgen_prefix, ld_variants)
-    pgen = Pgen(string(pgen_prefix, ".pgen"))
+    pgen = read_pgen_safe(pgen_prefix)
 
     nsamples = length(pgen.psam_df.IID)
 
@@ -119,7 +119,7 @@ function get_window_idxs(ld_variants, variant_ids)
 end
 
 function dosages_from_pgen(pgen_prefix, ld_variants)
-    pgen = Pgen(string(pgen_prefix, ".pgen"))
+    pgen = read_pgen_safe(pgen_prefix)
 
     nsamples = length(pgen.psam_df.IID)
 
@@ -297,11 +297,11 @@ function susie_rss_finemap(R, variants_info, y; n_causal=10)
 end
 
 function initialize_variants_info_rss(pgen_prefix, variants, gwas_results)
-    pgen = Pgen(string(pgen_prefix, ".pgen"))
+    pvar = read_pvar(string(pgen_prefix, ".pvar"))
     variants_info = leftjoin!(
         leftjoin!(
             DataFrame(ID=variants),
-            pgen.pvar_df,
+            pvar,
             on=:ID
         ),
         gwas_results,
@@ -414,7 +414,7 @@ function finemap_significant_regions(
     # Read GWAS results, PVAR files and samples ids
     @info "Reading GWAS results and PVAR files"
     gwas_results = CSV.read(gwas_results_file, DataFrame)
-    pvar = CSV.read(pgen_prefix * ".pvar", DataFrame; delim='\t', comment="##")
+    pvar = read_pvar(pgen_prefix * ".pvar")
     sample_file = make_clean_sample_file(sample_file; 
         exclude=split(exclude_string, ","), 
         phenotype=phenotype

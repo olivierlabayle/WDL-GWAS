@@ -71,7 +71,7 @@ If you are running on macOS, the above will error because docker won't find a su
 
 ```bash
 java \
-    -Dconfig.file=config/cromwell.macOS.conf \
+    -Dconfig.file=config/cromwell.local.conf \
     -jar ${CROMWELL_PATH} run workflow.wdl \
     --inputs config/local-inputs-example.json \
     --options config/local-options-examples.json

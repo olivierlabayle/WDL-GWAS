@@ -1,3 +1,4 @@
+## This is a comment that would create trouble if not dealt with properly
 #CHROM	POS	ID	REF	ALT
 1	9694126	chr1:9694126:C:T	C	T
 1	14012312	chr1:14012312:T:C	T	C
