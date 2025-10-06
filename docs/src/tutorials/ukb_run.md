@@ -1,8 +1,92 @@
 # Running WDL-GWAS on the UK Biobank RAP
 
 !!! note
-    A more thorough example is coming soon!
-    
+    This page is under development!
+
+In this example, we provide a tutorial to reproduce the two GWAS studies performed in the WDL-GWAS paper: BMI and colorectal cancer. This involves a bit more than running the workflow since we need to prepare the data for it.
+
+## Create the Covariates File
+
+First we need to extract the relevant fields from the UK Biobank's main dataset, we can do this using `dx extract_dataset`:
+
+```bash
+dx extract_dataset DATASET_RECORD_ID --fields-file docs/src/assets/paper_fields.txt --output raw_covariates.csv
+```
+
+However, the extracted dataset cannot be directly used with the WDL-GWAS workflow, we first need to define the covariates and phenotypes from the extracted fields. The following Julia code snippet creates such a covariate file. Here is what id does:
+
+- It makes sure the `FID` and `IID` are defined and correspond to the `eid` field.
+- It defines the current participants' age.
+- It defines colorectal cancer has having any of the C18, C19 or C20 ICD10 code.
+- It extracts the BMI column
+
+```julia
+using CSV
+using DataFrames
+using Dates
+
+function parse_ICD10_col!(parsed_col, col, codes)
+    for index in eachindex(parsed_col)
+        val = col[index]
+        val === missing && continue
+        parsed_col[index] =  parsed_col[index] | any(code -> startswith(val, code), codes)
+    end
+    return parsed_col
+end
+
+function parse_cancer(cols...; codes)
+    cancer_col = zeros(Int, length(first(cols)))
+    for col in cols
+        parse_ICD10_col!(cancer_col, col, codes)
+    end
+    return cancer_col
+end
+
+cancer_registry_cols = [
+    "participant.p40006_i0",
+    "participant.p40006_i1",
+    "participant.p40006_i2",
+    "participant.p40006_i3",
+    "participant.p40006_i4",
+    "participant.p40006_i5",
+    "participant.p40006_i6",
+    "participant.p40006_i7",
+    "participant.p40006_i8",
+    "participant.p40006_i9",
+    "participant.p40006_i10",
+    "participant.p40006_i11",
+    "participant.p40006_i12",
+    "participant.p40006_i13",
+    "participant.p40006_i14",
+    "participant.p40006_i15",
+    "participant.p40006_i16",
+    "participant.p40006_i17",
+    "participant.p40006_i18",
+    "participant.p40006_i19",
+    "participant.p40006_i20",
+    "participant.p40006_i21"
+]
+
+raw_covariates = CSV.read("raw_covariates.csv", DataFrame)
+
+covariates = select(raw_covariates,
+    "participant.eid" => "FID",
+    "participant.eid" => "IID",
+    "participant.p22001" => "SEX",
+    "participant.p34" => (x -> Int(Dates.year(now())) .- x) => "AGE",
+    "participant.p23104_i0" => "BMI",
+    cancer_registry_cols => ((cols...) -> parse_cancer(cols...; codes=["C18", "C19", "C20"])) => "COLORECTAL_CANCER"
+)
+
+CSV.write("covariates.csv", covariates)
+```
+
+Finally we can upload the dataset to the UK Biobank RAP using `dx upload`:
+
+```bash
+dx upload --path /wdl_gwas_covariates.csv covariates.csv
+```
+
 ## Describing the Inputs
 
 As per the [Running WDL-GWAS Locally](@ref) example, the workflow's inputs are provided via a JSON file. However this time, the file paths need to point to teir location in your UK Biobank RAP project. There are two main ways you can fill those in:
