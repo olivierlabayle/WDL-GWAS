@@ -79,6 +79,6 @@ java \
 
 ## Outputs
 
-The outputs will be found in the `gwas_outputs` directory. For example the poorly populated meta-analysis QQ plot for SEVERE\_COVID\_19, but well it is only a test dataset.
+The outputs will be found in the `gwas_outputs` directory. For example the poorly populated meta-analysis QQ plot for SEVERE\_COVID\_19, but well it is only a test dataset. For a full description of output files, please refer to the [Workflow's Outputs](@ref) section.
 
 !["Severe Covid 19 QQ"](../assets/local-example-qq.png)

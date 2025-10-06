@@ -1,4 +1,4 @@
-# Workflow Parameters
+# Workflow's Inputs
 
 !!! note
     Due to some cromwell parsing issues, all options and arguments must be provided as strings unless stated otherwise. That is, in your input file you should write `npcs="10"`, not `npcs=10`.

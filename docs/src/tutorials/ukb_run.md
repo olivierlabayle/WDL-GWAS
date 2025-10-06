@@ -1,5 +1,8 @@
 # Running WDL-GWAS on the UK Biobank RAP
 
+!!! note
+    A more thorough example is coming soon!
+    
 ## Describing the Inputs
 
 As per the [Running WDL-GWAS Locally](@ref) example, the workflow's inputs are provided via a JSON file. However this time, the file paths need to point to teir location in your UK Biobank RAP project. There are two main ways you can fill those in:
