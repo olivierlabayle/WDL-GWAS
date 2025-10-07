@@ -165,7 +165,7 @@ An ecample inputs JSON file could look like:
 First you need to compile the workflow and upload it to the RAP, this can be done with [dxCompiler](https://github.com/dnanexus/dxCompiler/blob/develop/doc/ExpertOptions.md):
 
 ```bash
-java -jar $DX_COMPILER_PATH compile workflow.wdl \
+java -jar $DX_COMPILER_PATH compile workflows/gwas.wdl \
 -f -project $RAP_PROJECT_ID \
 -reorg \
 -folder /workflows/gwas \

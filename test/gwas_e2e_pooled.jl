@@ -22,7 +22,7 @@ end
 cmd = Cmd([
     "java", config,
     "-jar", ENV["CROMWELL_PATH"],
-    "run", joinpath(PKGDIR, "workflow.wdl"),
+    "run", joinpath(PKGDIR, "workflows", "gwas.wdl"),
     "--inputs", joinpath(TESTDIR, "assets", "config", "gwas.pooled.json"),
     "--options", joinpath(TESTDIR, "assets", "config", "gwas.pooled.options.json")
 ])

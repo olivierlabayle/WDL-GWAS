@@ -8,7 +8,7 @@ In order to report a bug, ask for a feature request or say hello, please fill an
 
 Contributions are most welcome. This repository is organised as follows:
 
-- The complete workflow is in `workflow.wdl`.
+- The complete workflow is in `workflows/gwas.wdl`.
 - All dependencies are built within a docker image defined by `docker/Dockerfile`.
 - The "glue" code is written in [Julia](https://julialang.org/). Although contributions using other languages are acceptable, we prefer Julia as it keeps dependencies light and the repository clean.
 
