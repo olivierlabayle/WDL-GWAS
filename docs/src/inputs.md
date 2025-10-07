@@ -8,8 +8,8 @@
 These arguments must be provided or the workflow will not run.
 
 - `covariates_file`: A CSV file containing the set of covariates and phenotypes. Missing values can be either NAN, NA, NULL or an empty character.
-- `genotypes`: A PLINK BED fileset in GRCh38.
-- `imputed_genotypes`: A set of PLINK PGEN filesets, one for each chromosome in GRCh38.
+- `genotypes`: A PLINK BED fileset in GRCh38 containing variants for all chromosomes. This is only used for PCA, so you can either used the typed variants or an appropriate subset of the imputed genotypes.
+- `imputed_genotypes`: A set of PLINK2 PGEN filesets, one for each chromosome in GRCh38.
 - `phenotypes`: A list of phenotypes for which each GWAS will be run independently.
 
 ## General Options

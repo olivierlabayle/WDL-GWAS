@@ -89,7 +89,31 @@ dx upload --path /wdl_gwas_covariates.csv covariates.csv
 
 ## Extracting Imputed and Typed Genotypes
 
-WDL-GWAS requires both imputed and typed genotypes. For that we will use the TOPMed imputed genotypes which should be provided in your `/Bulk/Imputation/` folder.
+WDL-GWAS requires both imputed **and** typed genotypes. To get those we will (i) use the TOPMed imputed genotypes which should be provided in your `/Bulk/Imputation/` folder and (ii) add some quality control filters. And of course, to make this reproducible, we will use another WDL workflow.
+
+The workflow can be found in `workflows/extract_genotypes.wdl`, feel free to adapt it to your own needs.
+
+Then you can run it using the following DNA Nexus commands. First we compile it using dxCompiler:
+
+```
+java -jar $DX_COMPILER_PATH compile workflows/extract_genotypes.wdl \
+-f -project $RAP_PROJECT_ID \
+-reorg \
+-folder /workflows/extract_genotypes \
+-inputs docs/src/assets/extract-ukb-genotypes.inputs.json
+```
+
+The `docs/src/assets/extract-ukb-genotypes.inputs.json` points to the various BGEN files from TOPMed and VCF sites files.
+
+Then we can run it with:
+
+```
+dx run -y \
+-f docs/src/assets/extract-ukb-genotypes.inputs.dx.json \
+--priority high \
+--destination /ukb_extracted_genotypes/ \
+/workflows/extract_genotypes/extract_ukb_genotypes
+```
 
 ## Describing the Inputs
 
