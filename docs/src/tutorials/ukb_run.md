@@ -87,6 +87,10 @@ Finally we can upload the dataset to the UK Biobank RAP using `dx upload`:
 dx upload --path /wdl_gwas_covariates.csv covariates.csv
 ```
 
+## Extracting Imputed and Typed Genotypes
+
+WDL-GWAS requires both imputed and typed genotypes. For that we will use the TOPMed imputed genotypes which should be provided in your `/Bulk/Imputation/` folder.
+
 ## Describing the Inputs
 
 As per the [Running WDL-GWAS Locally](@ref) example, the workflow's inputs are provided via a JSON file. However this time, the file paths need to point to teir location in your UK Biobank RAP project. There are two main ways you can fill those in:

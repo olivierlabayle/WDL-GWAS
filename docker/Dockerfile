@@ -9,6 +9,7 @@ RUN rm /var/lib/dpkg/info/libc-bin.* \
     && apt-get update \
     && apt-get install -y \
         git \
+        libcurl4-openssl-dev \
         cmake \
         wget \
         procps \
@@ -23,7 +24,16 @@ RUN rm /var/lib/dpkg/info/libc-bin.* \
         r-base \
         r-base-dev
 
-# METAL
+# Install BCFTOOLS
+
+RUN wget https://github.com/samtools/bcftools/releases/download/1.22/bcftools-1.22.tar.bz2 \
+    && tar -xvjf bcftools-1.22.tar.bz2 \
+    && cd bcftools-1.22 \
+    && ./configure --prefix=/usr/local/ \
+    && make \
+    && make install
+
+# Install METAL
 RUN wget https://github.com/statgen/METAL/archive/refs/tags/2020-05-05.zip \
     && unzip 2020-05-05.zip \
     && cd METAL-2020-05-05 \
@@ -38,13 +48,19 @@ RUN wget https://github.com/statgen/METAL/archive/refs/tags/2020-05-05.zip \
 # Install SuSiE & Rfast
 RUN Rscript -e 'install.packages(c("susieR", "Rfast"), repos = "https://cloud.r-project.org/")'
 
+# Install PLINK
+RUN wget https://s3.amazonaws.com/plink1-assets/plink_linux_x86_64_20250819.zip \
+    && unzip plink_linux_x86_64_20250819.zip \
+    && mv plink /usr/local/bin \
+    && chmod +x /usr/local/bin/plink
+
 # Install PLINK2
 RUN wget https://s3.amazonaws.com/plink2-assets/alpha6/plink2_linux_x86_64_20250129.zip \
     && unzip plink2_linux_x86_64_20250129.zip \
     && mv plink2 /usr/local/bin \
     && chmod +x /usr/local/bin/plink2
 
-# Install conda
+# Install REGENIE
 RUN wget -O Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh" \
     && bash Miniforge3.sh -b -p /opt/miniforge3 \
     && /opt/miniforge3/bin/conda create -y -n regenie_env -c conda-forge -c bioconda regenie==4.1 \
@@ -55,7 +71,6 @@ RUN wget -O Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/lat
 ENV PATH=/opt/miniforge3/bin/:${PATH}
 
 # Create Julia Sysimage
-
 COPY . /opt/PopGen
 
 RUN export R_HOME=/usr/lib/R \
