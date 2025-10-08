@@ -133,6 +133,7 @@ task make_pgen_and_bed {
             --bgen ~{bgen_file} ref-first \
             --sample ~{bgen_sample_file} \
             --extract range imputed_extract_list.txt \
+            --max-alleles 2 \
             --geno ~{qc_genotype_missing_rate} \
             --mind ~{qc_individual_missing_rate} \
             --make-pgen \
@@ -150,6 +151,7 @@ task make_pgen_and_bed {
             --bgen ~{bgen_file} ref-first \
             --sample ~{bgen_sample_file} \
             --extract range typed_extract_list.txt \
+            --max-alleles 2 \
             --geno ~{qc_genotype_missing_rate} \
             --mind ~{qc_individual_missing_rate} \
             --make-bed \
