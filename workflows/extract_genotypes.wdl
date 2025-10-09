@@ -124,42 +124,43 @@ task make_pgen_and_bed {
     String input_prefix = basename(bgen_file, ".bgen")
 
     command <<<
-        # 1. Make PGEN file
+        # 1. Get the maximum length of variant IDs for PLINK2
+        bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\n' ~{vcf_info_file} > all_variants.tsv
+        max_id_len=$(( $(wc -L < all_variants.tsv) + 10 ))
+
+        # 2. Make PGEN file
         ## Get variants with R2 > r2_threshold
-        bcftools view -i 'INFO/R2>~{r2_threshold}' ~{vcf_info_file} | bcftools query -f '%CHROM\t%POS\t%ID\n' > imputed_variants.tsv
-        awk 'BEGIN { OFS="\t" } { print $1, $2, $2 }' imputed_variants.tsv > imputed_extract_list.txt
+        bcftools view -i 'INFO/R2>~{r2_threshold}' ~{vcf_info_file} | bcftools query -f '%CHROM\t%POS\t%POS\n' > imputed_variants.tsv
         ## Filter BGEN file and write PGEN with defined filters
         plink2 \
             --bgen ~{bgen_file} ref-first \
             --sample ~{bgen_sample_file} \
-            --extract range imputed_extract_list.txt \
+            --extract range imputed_variants.tsv \
             --max-alleles 2 \
+            --min-alleles 2 \
+            --set-all-var-ids @:#:\$r:\$a \
+            --new-id-max-allele-len ${max_id_len} \
             --geno ~{qc_genotype_missing_rate} \
             --mind ~{qc_individual_missing_rate} \
             --make-pgen \
             --out "~{input_prefix}.imputed"
-        ## Update variant IDs in pvar
-        awk 'BEGIN {OFS="\t"} NR==FNR {id[$2]=$3; next} {if (($2) in id) $3=id[$2]; print}' imputed_variants.tsv "~{input_prefix}.imputed.pvar" > temp_pvar.txt
-        mv temp_pvar.txt "~{input_prefix}.imputed.pvar"
         
-        # 2. Make a bed file with typed variants
+        # 3. Make a bed file with typed variants
         ## Extract typed variants
-        bcftools view -i 'INFO/TYPED=1' ~{vcf_info_file} | bcftools query -f '%CHROM\t%POS\t%ID\n' > typed_variants.tsv
-        awk 'BEGIN { OFS="\t" } { print $1, $2, $2 }' typed_variants.tsv > typed_extract_list.txt
+        bcftools view -i 'INFO/TYPED=1' ~{vcf_info_file} | bcftools query -f '%CHROM\t%POS\t%POS\n' > typed_variants.tsv
         ## Create PLINK bed file
         plink2 \
             --bgen ~{bgen_file} ref-first \
             --sample ~{bgen_sample_file} \
-            --extract range typed_extract_list.txt \
-            --rm-dup exclude-all \
+            --extract range typed_variants.tsv \
+            --set-all-var-ids @:#:\$r:\$a \
+            --new-id-max-allele-len ${max_id_len} \
             --max-alleles 2 \
+            --min-alleles 2 \
             --geno ~{qc_genotype_missing_rate} \
             --mind ~{qc_individual_missing_rate} \
             --make-bed \
             --out "~{input_prefix}.typed"
-        ## Update variant IDs in bim
-        awk 'BEGIN {OFS="\t"} NR==FNR {id[$2]=$3; next} {if (($4) in id) $2=id[$4]; print}' typed_variants.tsv "~{input_prefix}.typed.bim" > temp_bim.txt
-        mv temp_bim.txt "~{input_prefix}.typed.bim"
     >>>
 
     output {
