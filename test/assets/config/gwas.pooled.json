@@ -3,6 +3,7 @@
     "gwas.regenie_cv_folds": "loocv",
     "gwas.julia_use_sysimage": "false",
     "gwas.covariates_file": "test/assets/covariates/covariates.csv",
+    "gwas.filterby": ["SUPERPOPULATION=EUR", "AGE>50"],
     "gwas.covariates": ["SEX"],
     "gwas.phenotypes": ["AGE"],
     "gwas.approx_pca": "false",

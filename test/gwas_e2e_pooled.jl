@@ -1,7 +1,8 @@
 module TestGWASE2E2
 
 # This end to end test runs with the following conditions:
-# - a pooled analysis defined by the SUPERPOPULATION column
+# - a pooled analysis
+# - A filter on: SUPERPOPULATION=EUR and AGE>50
 # - a continuous phenotype: AGE
 # - finemapping thresholds are not met
 
@@ -42,6 +43,7 @@ gwas_results = CSV.read(
 )
 @test Set(gwas_results.CHROM) == Set([1, 2, 3])
 @test nrow(gwas_results) > 5
+@test maximum(gwas_results.N) < 400 # Filter applied
 
 # No Finemapping results (only headers)
 @test countlines(joinpath(results_dir, "call-merge_fp_group_chr_results", "shard-0", "execution", "all.AGE.finemapping.tsv")) == 1

@@ -1,11 +1,20 @@
 # Running WDL-GWAS on the UK Biobank RAP
 
+
+
 !!! note
     This page is under development!
 
-In this example, we provide a tutorial to reproduce the two GWAS studies performed in the WDL-GWAS paper: BMI and colorectal cancer. This involves a bit more than running the workflow since we need to prepare the data for it.
+In this example, we provide a tutorial to reproduce the two GWAS studies performed in the WDL-GWAS paper: BMI and colorectal cancer. This involves a bit more than running the workflow since we need to prepare the data for it. Also, since you will be interacting with the RAP and real world data, this involves costs and some time investment (however most of the time is just waiting for jobs to finish so you can do something else).
 
-## Create the Covariates File
+| Step | Total Time | Active Time | Expected Price |
+|:---: | :---: | :---: | :---: |
+| Covariates Preparation | 30 minutes | 20 minutes | £0 |
+| Genotypes Preparation | 4 hours | 10 minutes | £20 |
+| GWAS | | 10 minutes | |
+| Total | | 40 minutes | |
+
+## Creating the Covariates File
 
 First we need to extract the relevant fields from the UK Biobank's main dataset, we can do this using `dx extract_dataset`:
 
@@ -13,14 +22,21 @@ First we need to extract the relevant fields from the UK Biobank's main dataset,
 dx extract_dataset DATASET_RECORD_ID --fields-file docs/src/assets/paper_fields.txt --output raw_covariates.csv
 ```
 
-However, the extracted dataset cannot be directly used with the WDL-GWAS workflow, we first need to define the covariates and phenotypes from the extracted fields. The following Julia code snippet creates such a covariate file. Here is what id does:
+!!! warning
+    Sometimes the above fails randomly with `'Invalid JSON received from server', 200`. Just try again.
+
+However, the extracted dataset cannot be directly used with the WDL-GWAS workflow, we first need to define the covariates and phenotypes from the extracted fields. The following Julia code snippet creates such a covariate file. If you don't want to download Julia and reproduce the code, here is what it does:
 
 - It makes sure the `FID` and `IID` are defined and correspond to the `eid` field.
 - It defines the current participants' age.
+- It extracts the participants self reported ethnic background
 - It defines colorectal cancer has having any of the C18, C19 or C20 ICD10 code.
 - It extracts the BMI column
 
+If you want to reproduce this example, you will need to download Julia for which I recommend using [juliaup](https://github.com/JuliaLang/juliaup). Then, you can run the below code interactively using the REPL by typing `julia`.
+
 ```julia
+using Pkg; Pkg.activate("docs"); Pkg.instantiate()
 using CSV
 using DataFrames
 using Dates
@@ -41,6 +57,13 @@ function parse_cancer(cols...; codes)
     end
     return cancer_col
 end
+
+superethnicity(x::Missing) = x
+
+"""
+This will group `Do not know` and `Prefer not to answer` together
+"""
+superethnicity(x) = first(string(x))
 
 cancer_registry_cols = [
     "participant.p40006_i0",
@@ -74,6 +97,7 @@ covariates = select(raw_covariates,
     "participant.eid" => "IID",
     "participant.p22001" => "SEX",
     "participant.p34" => (x -> Int(Dates.year(now())) .- x) => "AGE",
+    "participant.p21000_i0" => (x -> superethnicity.(x)) => "SUPER_ETHNICITY",
     "participant.p23104_i0" => "BMI",
     cancer_registry_cols => ((cols...) -> parse_cancer(cols...; codes=["C18", "C19", "C20"])) => "COLORECTAL_CANCER"
 )
@@ -103,9 +127,23 @@ java -jar $DX_COMPILER_PATH compile workflows/extract_genotypes.wdl \
 -inputs docs/src/assets/extract-ukb-genotypes.inputs.json
 ```
 
-The `docs/src/assets/extract-ukb-genotypes.inputs.json` points to the various BGEN files from TOPMed and VCF sites files.
+where:
 
-Then we can run it with:
+- `DX_COMPILER_PATH` is set as per the installation's instruction.
+- `RAP_PROJECT_ID` is your UK Biobank RAP project ID.
+- `docs/src/assets/extract-ukb-genotypes.inputs.json` is the file providing the workflow's inputs. In particular it points to the various BGEN files from TOPMed and VCF sites files. 
+
+The compiler might output some warnings like `missing input for non-optional parameter` but you can ignore these.
+
+The command will do a few things:
+
+1. It will compile and upload the workflow to the UK Biobank RAP 
+2. It will create a corresponding `inputs.dx.json` file locally which can be used to run the workflow 
+
+!!! note
+    File paths need to point to their location in your UK Biobank RAP project. There are two main ways you can fill those in - via object identifiers: `dx://RAP_PROJECT_ID:FILE_ID` or via a file path: `dx://RAP_PROJECT_ID:/path/to/file`.
+
+Then we can run the workflow with:
 
 ```
 dx run -y \
@@ -115,87 +153,66 @@ dx run -y \
 /workflows/extract_genotypes/extract_ukb_genotypes
 ```
 
-## Describing the Inputs
+This workflow runs in approximately 5 hours and will cost about £20. The resulting files will be available in the `/ukb_extracted_genotypes` folder.
 
-As per the [Running WDL-GWAS Locally](@ref) example, the workflow's inputs are provided via a JSON file. However this time, the file paths need to point to teir location in your UK Biobank RAP project. There are two main ways you can fill those in:
+## Running WDL-GWAS
 
-- Via object identifiers: `dx://RAP_PROJECT_ID:FILE_ID`
-- Via a file path: `dx://RAP_PROJECT_ID:/path/to/file`
+Similarly to the previous step, we need to provide WDL-GWAS' inputs via a JSON file. In this example, the file paths will point to the freshly extracted imputed and typed genotypes. We also need to provide some phenotypes of interest, here `BMI` and `COLORECTAL_CANCER` and for illustration, we will restrict the analysis to a self-reported White ethnic background.
 
-An ecample inputs JSON file could look like:
+The full JSON input file is located in `docs/src/assets/paper.inputs.json` for which an extract is presented here:
 
 ```json
 {
-    "gwas.meta_exclude": ["AMR"],
-    "gwas.covariates_file": "dx://RAP_PROJECT_ID:/path/to/covariates/file",
-    "gwas.groupby": ["SUPERPOPULATION"],
-    "gwas.covariates": ["AGE", "SEX", "AGE_x_AGE"],
-    "gwas.phenotypes": ["SEVERE_PNEUMONIA", "SEVERE_COVID_19"],
+    "gwas.covariates_file": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/wdl_gwas_covariates.csv",
     "gwas.genotypes": {
         "chr": "all",
-        "bed": "dx://RAP_PROJECT_ID:/path/to/bed/file",
-        "bim": "dx://RAP_PROJECT_ID:/path/to/bim/file",
-        "fam": "dx://RAP_PROJECT_ID:/path/to/fam/file"
+        "bed": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/typed.bed",
+        "bim": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/typed.bim",
+        "fam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/typed.fam"
     },
     "gwas.imputed_genotypes": [
         {
             "chr": "1",
-            "pgen": "dx://RAP_PROJECT_ID:PGEN_CHR_1_FILE_ID",
-            "psam": "dx://RAP_PROJECT_ID:PSAM_CHR_1_FILE_ID",
-            "pvar": "dx://RAP_PROJECT_ID:PVAR_CHR_1_FILE_ID"
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c1_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c1_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c1_b0_v1.imputed.pvar"
         },
         {
             "chr": "2",
-            "pgen": "dx://RAP_PROJECT_ID:PGEN_CHR_2_FILE_ID",
-            "psam": "dx://RAP_PROJECT_ID:PSAM_CHR_2_FILE_ID",
-            "pvar": "dx://RAP_PROJECT_ID:PVAR_CHR_2_FILE_ID"
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c2_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c2_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c2_b0_v1.imputed.pvar"
         },
-        {
-            "chr": "3",
-            "pgen": "dx://RAP_PROJECT_ID:PGEN_CHR_3_FILE_ID",
-            "psam": "dx://RAP_PROJECT_ID:PSAM_CHR_3_FILE_ID",
-            "pvar": "dx://RAP_PROJECT_ID:PVAR_CHR_3_FILE_ID"
-        },
+    ...
     ],
+    "gwas.covariates": ["AGE", "SEX", "AGE_x_AGE", "AGE_x_SEX"],
+    "gwas.phenotypes": ["COLORECTAL_CANCER", "BMI"],
+    "gwas.filterby": ["SUPER_ETHNICITY=1"],
+    ...
 }
 ```
 
-## Running the Workflow
-
-First you need to compile the workflow and upload it to the RAP, this can be done with [dxCompiler](https://github.com/dnanexus/dxCompiler/blob/develop/doc/ExpertOptions.md):
+Then, as in the previous step, we need to compile WDL-GWAS and upload it to the RAP, this can be done with [dxCompiler](https://github.com/dnanexus/dxCompiler/blob/develop/doc/ExpertOptions.md):
 
 ```bash
 java -jar $DX_COMPILER_PATH compile workflows/gwas.wdl \
 -f -project $RAP_PROJECT_ID \
 -reorg \
 -folder /workflows/gwas \
--inputs inputs.json
+-inputs docs/src/assets/paper.inputs.json
 ```
 
-where:
-
-- `DX_COMPILER_PATH` is set as per the installation's instruction.
-- `RAP_PROJECT_ID` is your UK Biobank RAP project ID.
-- `inputs.json` is your workflow's input file. 
-
-The compiler might output some warnings like `missing input for non-optional parameter` but you can ignore these.
-
-The command will do a few things:
-
-1. It will compile and upload the workflow to the UK Biobank RAP 
-2. It will create a corresponding `inputs.dx.json` file locally which can be used to run the workflow 
-
-Then, to run the workflow, run:
+Then, to run WDL-GWAS:
 
 ```bash
 dx run -y \
--f inputs.dx.json \
+-f docs/src/assets/paper.inputs.dx.json \
 --priority high \
---destination /workflow_outputs/ \
+--destination /wdl_gwas_paper_outputs/ \
 /workflows/gwas/gwas
 ```
 
-Of course you can change the destination `/workflow_outputs` to your need. You should be able to visualize the run execution on your UK Biobank RAP account under the `MONITOR` tab.
+Of course you can change the destination `/wdl_gwas_paper_outputs` to your need. You should be able to visualize the run execution on your UK Biobank RAP account under the `MONITOR` tab.
 
 ## Outputs
 
