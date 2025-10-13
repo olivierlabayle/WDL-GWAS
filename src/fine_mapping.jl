@@ -146,7 +146,10 @@ function dosages_from_pgen(pgen_prefix, ld_variants)
 end
 
 function load_phenotypes_matching_samples(covariates_file, sample_list, phenotype)
-    covariates = CSV.read(covariates_file, DataFrame; delim='\t', select=["IID", phenotype])
+    covariates = CSV.read(covariates_file, DataFrame; 
+        delim='\t', 
+        select=["IID", phenotype]
+    )
     return innerjoin(covariates, DataFrame(IID=sample_list), on=:IID)
 end
 
@@ -345,6 +348,14 @@ function make_clean_sample_file(input_sample_file; exclude=[], phenotype="Y")
 end
 
 """
+The sample_file is assumed to be a tab-delimited file with two columns: FID and IID. 
+"""
+function read_samples(sample_file)
+    samples = CSV.read(sample_file, DataFrame, header=["FID", "IID"], delim="\t").IID
+    return samples
+end
+
+"""
     finemap_significant_regions(
         gwas_results_file,
         pgen_prefix,
@@ -446,7 +457,7 @@ function finemap_significant_regions(
     loci = get_loci_to_finemap(sig_clumps; window_kb=finemap_window_kb)
 
     # Finemap each clump
-    sample_list = getindex.(split.(readlines(sample_file), "\t"), 2)
+    sample_list = read_samples(sample_file)
     y_df = load_phenotypes_matching_samples(covariates_file, sample_list, phenotype)
     finemapping_results = []
     for locus in loci

@@ -7,10 +7,10 @@
 
 In this example, we provide a tutorial to reproduce the two GWAS studies performed in the WDL-GWAS paper: BMI and colorectal cancer. This involves a bit more than running the workflow since we need to prepare the data for it. Also, since you will be interacting with the RAP and real world data, this involves costs and some time investment (however most of the time is just waiting for jobs to finish so you can do something else).
 
-| Step | Total Time | Active Time | Expected Price |
-|:---: | :---: | :---: | :---: |
+| **Step** | **Total Time** | **Active Time** | **Expected Price** |
+| :---     | :------------: | :-------------: | :----------------: |
 | Covariates Preparation | 30 minutes | 20 minutes | £0 |
-| Genotypes Preparation | 4 hours | 10 minutes | £20 |
+| Genotypes Preparation | 4 hours | 10 minutes | £21 |
 | GWAS | | 10 minutes | |
 | Total | | 40 minutes | |
 
