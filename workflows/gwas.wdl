@@ -42,13 +42,13 @@ workflow gwas {
         String regenie_cv_folds = "loocv" # or an integer
         String regenie_bsize = "1000"
         # Finemapping parameters
-        String min_sig_clump_size = "3"
+        String min_sig_clump_size = "10"
         String lead_pvalue = "5e-8"
-        String p2_pvalue = "1e-5"
+        String p2_pvalue = "5e-5"
         String r2_threshold = "0.1"
-        String clump_kb = "500"
+        String clump_kb = "250"
         String n_causal = "10"
-        String finemap_window_kb = "500"
+        String finemap_window_kb = clump_kb
         # Meta analysis
         Boolean meta_analysis = length(groupby) > 0
         Array[String] meta_exclude = ["ADMIXED"]

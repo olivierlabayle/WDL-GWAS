@@ -43,13 +43,13 @@ Genome-wide association testing is performed using [REGENIE](https://rgcgithub.g
 
 Finemapping proceeds in two stages. First clumps are formed using [plink2 LD-based result clumping](https://www.cog-genomics.org/plink/2.0/postproc) and lead variants are identified. Then a window is formed around the lead variant to be further finemapped with [SuSiE](https://stephenslab.github.io/susieR/).
 
-- `min_sig_clump_size` (default: 3): Defines the minimum number of variants within a clump for a locus to be considered for finemapping.
+- `min_sig_clump_size` (default: `10`): Defines the minimum number of variants within a clump for a locus to be considered for finemapping.
 `lead_pvalue` (default: `5e-8`): A clump's lead variant must have at least this p-value.
-- `p2_pvalue` (default: 1e-5): Other variants in the clump must have at least this p-value.
-- `r2_threshold` (default: 0.1): The LD between the lead variant and other variants in the clump must also as strong as `r2_threshold`.
-- `clump_kb` (default: 500): The maximum distance between the lead variant and a clumped variant.
-- `n_causal` (default: 10): SuSiE's `L` variable, the expected number of causal variants in a locus.
-- `finemap_window_kb` (default: 500): Defines the size of the finemapping window.
+- `p2_pvalue` (default: `5e-5`): Other variants in the clump must have at least this p-value.
+- `r2_threshold` (default: `0.1`): The LD between the lead variant and other variants in the clump must also as strong as `r2_threshold`.
+- `clump_kb` (default: `250`): The maximum distance between the lead variant and a clumped variant.
+- `n_causal` (default: `10`): SuSiE's `L` variable, the expected number of causal variants in a locus.
+- `finemap_window_kb` (default: `250`): Defines the size of the finemapping window.
 
 ## Meta-Analysis Options
 
@@ -61,8 +61,8 @@ Meta analysis is performed using [METAL](https://github.com/statgen/METAL).
 
 ## Miscellaneous Options
 
-- `maf` (default: 0.01): Minor allele frequency threshold. This is used to filter variants for PCA and for plotting GWAS results. The association testing step is always performed across all variants. Post fitering for downstream analysis is left to the user.
-- `mac` (default: 10): Minor allele count used to filter variants in REGENIE and PCA QC.
+- `maf` (default: `0.01`): Minor allele frequency threshold. This is used to filter variants for PCA and for plotting GWAS results. The association testing step is always performed across all variants. Post fitering for downstream analysis is left to the user.
+- `mac` (default: `10`): Minor allele count used to filter variants in REGENIE and PCA QC.
 
 ## Developpement Options
 
