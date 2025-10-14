@@ -90,13 +90,14 @@ function region_plot(region_data)
     hidespines!(ax1, :t, :r)
     ## Plot region data points
     log10ps = -log10.(region_data.P)
-    scatter!(ax1, 
+    sc = scatter!(ax1, 
         collect(region_data.BP),
         log10ps,
         markersize=markersize,
         color=region_data.PHASED_R2,
         colormap = :heat
     )
+    Colorbar(fig[1, 2], sc)
     ## Add significance threshold
     hlines!(ax1, -log10(threshold), color=:green)
     ## Add Lead SNPs
