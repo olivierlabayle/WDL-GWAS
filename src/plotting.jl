@@ -72,6 +72,7 @@ end
 
 function region_plot(region_data)
     chr = only(unique((region_data[!, "CHR"])))
+    susie_converged = first(region_data.SUSIE_CONVERGED)
     region = string(chr, ":", minimum(region_data.BP), "-", maximum(region_data.BP))
     genomic_features = get_genomic_features(region; features=["gene"])
     credible_sets = sort(unique(skipmissing(region_data.CS)))
@@ -139,7 +140,7 @@ function region_plot(region_data)
         )
     end
     pips_legend_elements = [(string("CS ", cs), PolyElement(color=cs_color, colorrange=1:10, colormap=:tab10)) for (cs, cs_color) in enumerate(credible_sets_colors)]
-    Legend(fig[2, 2], getindex.(pips_legend_elements, 2), getindex.(pips_legend_elements, 1), "Fine Mapping CSs", framevisible = false)
+    Legend(fig[2, 2], getindex.(pips_legend_elements, 2), getindex.(pips_legend_elements, 1), "CSs (converged=$susie_converged)", framevisible = false)
     # Genomic annotations
     ax3 = Axis(fig[3, 1]; 
         xlabel=string("Chr", chr),
@@ -159,7 +160,7 @@ function region_plot(region_data)
         )
         name = haskey(feature, "external_name") ? feature["external_name"] : feature["gene_id"]
         x_coord = (feature["start"] + feature["end"])/2
-        text!(ax3, x_coord, y_coord + 0.2, text=name, align = (:center, :bottom), color=:black, fontsize=12)
+        text!(ax3, x_coord, y_coord + 0.1, text=name, align = (:center, :bottom), color=:black, fontsize=12)
     end
     return fig
 end
@@ -183,7 +184,7 @@ function make_plots(gwas_file, finemapping_file; maf=0.01, output_prefix = "gwas
     for (locus_key, locus_group) in pairs(groupby(finemapping_results, :LOCUS_ID))
         region_data = innerjoin(
             gwas_results,
-            DataFrames.select(locus_group, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2]), 
+            DataFrames.select(locus_group, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2, :SUSIE_CONVERGED]), 
             on=[:ID]
         )
         fig = region_plot(region_data)

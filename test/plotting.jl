@@ -56,7 +56,7 @@ end
     ))
     region_data = innerjoin(
         gwas_results,
-        DataFrames.select(finemapping_results, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2]), 
+        DataFrames.select(finemapping_results, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2, :SUSIE_CONVERGED]), 
         on=[:ID]
     )
     fig = PopGen.region_plot(region_data)
@@ -79,29 +79,6 @@ end
     @test isfile(string(output_prefix, ".qq.png"))
     @test isfile(string(output_prefix, ".rs12732514.locuszoom.png"))
     @test isfile(string(output_prefix, ".rs7515509.locuszoom.png"))
-end
-
-@testset "Test region_plot" begin
-    finemapping_results = PopGen.harmonize_finemapping_results(
-            CSV.read(
-        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.finemapping.tsv"), 
-        DataFrame; 
-        delim="\t"
-    ))
-    finemapping_results = finemapping_results[finemapping_results.LOCUS_ID .== "rs7515509", :]
-    gwas_results = PopGen.harmonize_gwas_results(
-            CSV.read(
-        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.gwas.tsv"), 
-        DataFrame; 
-        delim="\t"
-    ))
-    region_data = innerjoin(
-        gwas_results,
-        DataFrames.select(finemapping_results, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2]), 
-        on=[:ID]
-    )
-    fig = PopGen.region_plot(region_data)
-    @test fig !== nothing
 end
 
 end

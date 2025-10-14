@@ -1,5 +1,5 @@
 const FINEMAPPING_RESULT_COLS = [
-    "CHROM", "POS", "ID", "REF", "ALT", "LOCUS_ID", "PIP", "CS", "UNPHASED_R2"
+    "CHROM", "POS", "ID", "REF", "ALT", "LOCUS_ID", "PIP", "CS", "UNPHASED_R2", "SUSIE_CONVERGED"
 ]
 
 function tag_variant_id_missing_from_gwas!(pvar, gwas_results)
@@ -222,9 +222,10 @@ function postprocess_finemapping_results!(variants_info, finemapping_results, ld
     variants_info.PIP = finemapping_results[:pip]
     p = length(variants_info.PIP)
     variants_info.LOCUS_ID = fill(locus_id, p)
+    variants_info.SUSIE_CONVERGED = fill(finemapping_results[:converged], p)
     variants_info.CS = get_credible_sets(finemapping_results, p)
     leftjoin!(variants_info, ld_variants[!, [:ID_B, :UNPHASED_R2]], on=:ID => :ID_B)
-    return select!(variants_info, :CHROM, :POS, :ID, :REF, :ALT, :LOCUS_ID, :PIP, :CS, :UNPHASED_R2)
+    return select!(variants_info, :CHROM, :POS, :ID, :REF, :ALT, :LOCUS_ID, :PIP, :CS, :UNPHASED_R2, :SUSIE_CONVERGED)
 end
 
 function finemap_locus(variant_ID, pgen_prefix, y_df;
