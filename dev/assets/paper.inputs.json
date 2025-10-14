@@ -1,0 +1,148 @@
+{
+    "gwas.covariates_file": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/wdl_gwas_covariates.csv",
+    "gwas.genotypes": {
+        "chr": "all",
+        "bed": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/typed.bed",
+        "bim": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/typed.bim",
+        "fam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/typed.fam"
+    },
+    "gwas.imputed_genotypes": [
+        {
+            "chr": "1",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c1_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c1_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c1_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "2",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c2_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c2_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c2_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "3",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c3_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c3_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c3_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "4",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c4_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c4_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c4_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "5",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c5_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c5_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c5_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "6",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c6_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c6_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c6_b0_v1.imputed.pvar"
+        },
+                {
+            "chr": "7",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c7_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c7_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c7_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "8",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c8_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c8_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c8_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "9",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c9_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c9_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c9_b0_v1.imputed.pvar"
+        },
+                {
+            "chr": "10",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c10_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c10_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c10_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "11",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c11_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c11_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c11_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "12",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c12_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c12_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c12_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "13",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c13_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c13_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c13_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "14",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c14_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c14_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c14_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "15",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c15_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c15_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c15_b0_v1.imputed.pvar"
+        },
+                {
+            "chr": "16",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c16_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c16_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c16_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "17",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c17_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c17_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c17_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "18",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c18_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c18_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c18_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "19",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c19_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c19_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c19_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "20",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c20_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c20_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c20_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "21",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c21_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c21_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c21_b0_v1.imputed.pvar"
+        },
+        {
+            "chr": "22",
+            "pgen": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c22_b0_v1.imputed.pgen",
+            "psam": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c22_b0_v1.imputed.psam",
+            "pvar": "dx://project-J0pkqyQJpYQ133JG1p2J1qzv:/ukb_extracted_genotypes/ukb21007_c22_b0_v1.imputed.pvar"
+        }
+    ],
+    "gwas.covariates": ["AGE", "SEX", "AGE_x_AGE", "AGE_x_SEX"],
+    "gwas.phenotypes": ["COLORECTAL_CANCER", "BMI"],
+    "gwas.filterby": ["SUPER_ETHNICITY=1"],
+    "gwas.npcs": "20",
+    "gwas.maf": "0.005"
+}
