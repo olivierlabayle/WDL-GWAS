@@ -9,7 +9,6 @@ using CairoMakie
 using GeneticsMakie
 using Colors
 using Tables
-using PGENFiles
 using RCall
 using Statistics
 using JSON
