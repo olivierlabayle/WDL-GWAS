@@ -12,11 +12,9 @@ TESTDIR = joinpath(PKGDIR, "test")
     pvar_headers = ["#CHROM", "POS", "ID", "REF", "ALT"]
     psam_headers = ["#FID", "IID", "SEX"]
     # pvar with a comment line
-    @test PopGen.find_plink2_header_index(joinpath(TESTDIR, "assets", "imputed", "chr1.qced.pvar")) == 2
     pvar_file = PopGen.read_pvar(joinpath(TESTDIR, "assets", "imputed", "chr1.qced.pvar"))
     @test names(pvar_file) == pvar_headers
     # pvar with no comment line
-    @test PopGen.find_plink2_header_index(joinpath(TESTDIR, "assets", "imputed", "chr2.qced.pvar")) == 1
     pvar_file = PopGen.read_pvar(joinpath(TESTDIR, "assets", "imputed", "chr2.qced.pvar"))
     @test names(pvar_file) == pvar_headers
     # psam with a comment line
@@ -25,14 +23,6 @@ TESTDIR = joinpath(PKGDIR, "test")
     # psam with no comment line
     psam_file = PopGen.read_psam(joinpath(TESTDIR, "assets", "imputed", "chr2.qced.psam"))
     @test names(psam_file) == psam_headers
-    # read pgen safely with comment lines
-    pgen = PopGen.read_pgen_safe(joinpath(TESTDIR, "assets", "imputed", "chr1.qced"))
-    @test names(pgen.pvar_df) == pvar_headers
-    @test names(pgen.psam_df) == psam_headers
-    # read pgen safely with no comment lines
-    pgen = PopGen.read_pgen_safe(joinpath(TESTDIR, "assets", "imputed", "chr2.qced"))
-    @test names(pgen.pvar_df) == pvar_headers
-    @test names(pgen.psam_df) == psam_headers
 end
 
 @testset "Test group_needs_exclusion" begin

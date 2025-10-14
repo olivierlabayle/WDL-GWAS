@@ -94,7 +94,7 @@ function region_plot(region_data)
         collect(region_data.BP),
         log10ps,
         markersize=markersize,
-        color=region_data.PHASED_R2,
+        color=region_data.UNPHASED_R2,
         colormap = :heat
     )
     Colorbar(fig[1, 2], sc)
@@ -183,7 +183,7 @@ function make_plots(gwas_file, finemapping_file; maf=0.01, output_prefix = "gwas
     for (locus_key, locus_group) in pairs(groupby(finemapping_results, :LOCUS_ID))
         region_data = innerjoin(
             gwas_results,
-            DataFrames.select(locus_group, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :PHASED_R2]), 
+            DataFrames.select(locus_group, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2]), 
             on=[:ID]
         )
         fig = region_plot(region_data)

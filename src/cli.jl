@@ -74,10 +74,6 @@ function cli_settings()
             arg_type = String
             required = true
             help = "Path to the sample IDs file used to generate the GWAS results."
-        "--Xtype"
-            arg_type = String
-            help = "Type of genotype data to use for fine-mapping, either `:dosages` or `:genotypes`."
-            default = "dosages"
         "--output-prefix"
             arg_type = String
             help = "Prefix to output the significant clumps (TSV format)."
@@ -252,7 +248,6 @@ function julia_main()::Cint
             cmd_settings["pgen-prefix"],
             cmd_settings["covariates-file"],
             cmd_settings["sample-file"];
-            Xtype=cmd_settings["Xtype"],
             output_prefix=cmd_settings["output-prefix"],
             min_sig_clump_size=cmd_settings["min-sig-clump-size"],
             lead_pvalue=cmd_settings["lead-pvalue"],

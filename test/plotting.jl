@@ -56,7 +56,7 @@ end
     ))
     region_data = innerjoin(
         gwas_results,
-        DataFrames.select(finemapping_results, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :PHASED_R2]), 
+        DataFrames.select(finemapping_results, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2]), 
         on=[:ID]
     )
     fig = PopGen.region_plot(region_data)
@@ -97,7 +97,7 @@ end
     ))
     region_data = innerjoin(
         gwas_results,
-        DataFrames.select(finemapping_results, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :PHASED_R2]), 
+        DataFrames.select(finemapping_results, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2]), 
         on=[:ID]
     )
     fig = PopGen.region_plot(region_data)

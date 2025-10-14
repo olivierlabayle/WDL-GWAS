@@ -42,7 +42,6 @@ workflow gwas {
         String regenie_cv_folds = "loocv" # or an integer
         String regenie_bsize = "1000"
         # Finemapping parameters
-        String Xtype = "dosages" # or "genotypes"
         String min_sig_clump_size = "3"
         String lead_pvalue = "5e-8"
         String p2_pvalue = "1e-5"
@@ -181,7 +180,6 @@ workflow gwas {
                     chr = imputed_chr_fileset.chr,
                     covariates_file = merge_covariates_and_pcs.covariates_and_pcs,
                     sample_file = sample_list,
-                    Xtype = Xtype,
                     group_name = group_name,
                     min_sig_clump_size = min_sig_clump_size,
                     lead_pvalue = lead_pvalue,
@@ -518,7 +516,6 @@ task finemapping {
         String chr
         File covariates_file
         File sample_file
-        String Xtype = "dosages" # or "genotypes"
         String group_name
         String min_sig_clump_size = "3"
         String lead_pvalue = "5e-8"
@@ -538,7 +535,6 @@ task finemapping {
             ${pgen_prefix} \
             ~{covariates_file} \
             ~{sample_file} \
-            --Xtype=~{Xtype} \
             --output-prefix=finemapping.~{group_name}.chr~{chr} \
             --min-sig-clump-size=~{min_sig_clump_size} \
             --lead-pvalue=~{lead_pvalue} \

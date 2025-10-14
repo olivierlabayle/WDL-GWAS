@@ -43,7 +43,6 @@ Genome-wide association testing is performed using [REGENIE](https://rgcgithub.g
 
 Finemapping proceeds in two stages. First clumps are formed using [plink2 LD-based result clumping](https://www.cog-genomics.org/plink/2.0/postproc) and lead variants are identified. Then a window is formed around the lead variant to be further finemapped with [SuSiE](https://stephenslab.github.io/susieR/).
 
-- `Xtype` (default: `dosages`): To use `dosages` or `genotypes` during finemapping.
 - `min_sig_clump_size` (default: 3): Defines the minimum number of variants within a clump for a locus to be considered for finemapping.
 `lead_pvalue` (default: `5e-8`): A clump's lead variant must have at least this p-value.
 - `p2_pvalue` (default: 1e-5): Other variants in the clump must have at least this p-value.
