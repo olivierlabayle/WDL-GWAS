@@ -167,13 +167,14 @@ function get_susie_inputs(X_df, y_df)
     return X, y
 end
 
-function susie_finemap(X, y; n_causal=10)
+function susie_finemap(X, y; n_causal=10, max_iter = 1000)
     @rput X
     @rput y
     @rput n_causal
+    @rput max_iter
     R"""
     library(susieR)
-    fitted = susie(X, y, L=n_causal)
+    fitted = susie(X=X, y=y, L=n_causal, max_iter=max_iter)
     """
     return @rget fitted
 end
@@ -248,7 +249,7 @@ function get_LD_matrix(pgen_prefix, locus)
     output_prefix = joinpath(tmpdir, "ld_matrix")
     run(`plink2 \
         --pfile $pgen_prefix \
-        --r-unphased square \
+        --r-unphased square ref-based \
         --chr $chr \
         --from-bp $locus_start \
         --to-bp $locus_end \
@@ -260,7 +261,7 @@ function get_LD_matrix(pgen_prefix, locus)
     return R, variants
 end
 
-function susie_rss_finemap(R, variants_info, y; n_causal=10)
+function susie_rss_finemap(R, variants_info, y; n_causal=10, max_iter=1000)
     var_y, nsamples = var(y), length(y)
     shat = variants_info.SE
     bhat = variants_info.BETA
@@ -270,9 +271,10 @@ function susie_rss_finemap(R, variants_info, y; n_causal=10)
     @rput var_y
     @rput n_causal
     @rput nsamples
+    @rput max_iter
     R"""
     library(susieR)
-    fitted = susie_rss(R=R, bhat=bhat, shat=shat, var_y=var_y, L=n_causal, n=nsamples)
+    fitted = susie_rss(R=R, bhat=bhat, shat=shat, var_y=var_y, L=n_causal, n=nsamples, max_iter=max_iter)
     """
     return @rget fitted
 end

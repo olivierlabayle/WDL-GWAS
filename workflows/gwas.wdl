@@ -49,6 +49,7 @@ workflow gwas {
         String clump_kb = "250"
         String n_causal = "10"
         String finemap_window_kb = clump_kb
+        String finemap_strategy = "rss"
         # Meta analysis
         Boolean meta_analysis = length(groupby) > 0
         Array[String] meta_exclude = ["ADMIXED"]
@@ -187,7 +188,8 @@ workflow gwas {
                     r2_threshold = r2_threshold,
                     clump_kb = clump_kb,
                     n_causal = n_causal,
-                    finemap_window_kb = finemap_window_kb
+                    finemap_window_kb = finemap_window_kb,
+                    finemap_strategy = finemap_strategy
             }
         }
 
@@ -524,11 +526,17 @@ task finemapping {
         String clump_kb = "1000"
         String n_causal = "10"
         String finemap_window_kb = "1000"
+        String finemap_strategy = "rss" # or "full"
     }
 
     command <<<
         phenotype=$(echo ~{group_name} | cut -d'.' -f2)
         pgen_prefix=$(dirname "~{pgen_file}")/$(basename "~{pgen_file}" .pgen)
+
+        finemap_opt=""
+        if [[ "~{finemap_strategy}" == "rss" ]]; then
+            finemap_opt="--rss"
+        fi
 
         ~{julia_cmd} finemap \
             ~{gwas_results} \
@@ -543,7 +551,7 @@ task finemapping {
             --clump-kb=~{clump_kb} \
             --n-causal=~{n_causal} \
             --finemap-window-kb=~{finemap_window_kb} \
-            --phenotype=${phenotype}
+            --phenotype=${phenotype} ${finemap_opt}
     >>>
 
     output {
