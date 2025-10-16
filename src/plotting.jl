@@ -188,7 +188,7 @@ function make_plots(gwas_file, finemapping_file; maf=0.01, output_prefix = "gwas
             on=[:ID]
         )
         fig = region_plot(region_data)
-        save(string(output_prefix, ".", locus_key.LOCUS_ID, ".locuszoom.png"), fig)
+        save(string(output_prefix, ".", replace(locus_key.LOCUS_ID, ":" => "_"), ".locuszoom.png"), fig)
     end
     return 0
 end
