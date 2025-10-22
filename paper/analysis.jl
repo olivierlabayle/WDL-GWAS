@@ -5,8 +5,10 @@ using CairoMakie
 using GeneticsMakie
 
 const data_dir = expanduser("~/Data/WDL_GWAS")
-
+const WDL_GWAS_DIR = joinpath(data_dir, "wdl_gwas")
 const GENE_ATLAS_DIR = joinpath(data_dir, "gene_atlas")
+const PAN_UKB_DIR = joinpath(data_dir, "panukb")
+const CHAIN_FILE = joinpath(data_dir, "hg19ToHg38.over.chain.gz")
 
 function parse_pvalue(log10_pval::AbstractString)
     if log10_pval == "NA"
@@ -15,6 +17,8 @@ function parse_pvalue(log10_pval::AbstractString)
         return parse_pvalue(parse(Float64, log10_pval))
     end
 end
+
+wdl_gwas_filename(trait) = joinpath(WDL_GWAS_DIR, string("all.", trait, ".gwas.tsv"))
 
 parse_pvalue(log10_pval::Real) = exp10(-log10_pval)
 
@@ -60,7 +64,7 @@ function qqplot(gwas_results; title="QQ Plot")
     return fig
 end
 
-function liftover_gwas(gwas_file, chain_file, output)
+function liftover_gwas(gwas_file, output; )
     tmpdir = mktempdir()
     input_bed_file = joinpath(tmpdir, "GRCh37_positions.bed")
     output_bed_file = joinpath(tmpdir, "GRCh38_positions.bed")
@@ -86,7 +90,7 @@ function liftover_gwas(gwas_file, chain_file, output)
         delim="\t"
     )
     # Liftover
-    run(`CrossMap bed --chromid s --unmap-file $unmapped_file $chain_file $input_bed_file $output_bed_file`)
+    run(`CrossMap bed --chromid s --unmap-file $unmapped_file $CHAIN_FILE $input_bed_file $output_bed_file`)
     # Reload, format and write output
     gwas_results = CSV.read(
         output_bed_file, 
@@ -112,26 +116,72 @@ function liftover_gwas(gwas_file, chain_file, output)
     rm(tmpdir, recursive=true)
 end
 
-function liftover_gwases(data_dir)
-    chain_file = joinpath(data_dir, "hg19ToHg38.over.chain.gz")
-    @info "Lifting over: icd10-C18-both_sexes.tsv"
-    liftover_gwas(
-        joinpath(data_dir, "icd10-C18-both_sexes.tsv"), 
-        chain_file, 
-        joinpath(data_dir, "icd10-C18-both_sexes.GRCh38.tsv")
+"""
+
+gwas_results is assumed to have columns: CHROM, POS, OTHER_COLUMNS...
+"""
+function liftover_gwas_new(gwas_results, output)
+    tmpdir = mktempdir()
+    input_bed_file = joinpath(tmpdir, "GRCh37_positions.bed")
+    output_bed_file = joinpath(tmpdir, "GRCh38_positions.bed")
+    unmapped_file = joinpath(tmpdir, "unmapped.bed")
+    # Write GWAS results to BED format
+    column_names = names(gwas_results)
+    CSV.write(input_bed_file,
+        insertcols(gwas_results, 3, :END_POS => gwas_results.POS),
+        header=false,
+        missingstring="NA",
+        delim="\t"
     )
-    @info "Lifting over: continuous-23104-both_sexes-irnt.tsv"
-    liftover_gwas(
-        joinpath(data_dir, "continuous-23104-both_sexes-irnt.tsv"), 
-        chain_file, 
-        joinpath(data_dir, "continuous-23104-both_sexes-irnt.GRCh38.tsv")
+    # Liftover
+    run(`CrossMap bed --chromid s --unmap-file $unmapped_file $CHAIN_FILE $input_bed_file $output_bed_file`)
+    # Reload, format and write output
+    gwas_results = CSV.read(
+        output_bed_file, 
+        DataFrame; 
+        header=["CHROM", "POS", "POS_END", column_names[3:end]...],
+        missingstring="NA",
+        delim="\t"
     )
+    @assert all(gwas_results.POS .== gwas_results.POS_END)
+    CSV.write(output,
+        select(gwas_results, column_names), 
+        delim="\t"
+    )
+    rm(tmpdir, recursive=true)
+end
+
+liftover_panukb_filename(trait) = joinpath(PAN_UKB_DIR, "gwas.$trait.GRCh38.tsv")
+
+function liftover_panukb()
+    @info "Lifting over PANUKB"
+    trait_map = [
+        "icd10-C18-both_sexes.tsv" => "COLORECTAL_CANCER",
+        "continuous-23104-both_sexes-irnt.tsv" => "BMI"
+    ]
+    for (panukb_file, trait) in trait_map
+        isfile(liftover_panukb_filename(trait)) && continue
+        @info "Lifting over PANUKB trait: $trait"
+        gwas_results = CSV.read(joinpath(PAN_UKB_DIR, panukb_file), DataFrame; missingstring="NA")
+        gwas_results = select(gwas_results, 
+            :chr => :CHROM, 
+            :pos => :POS, 
+            :ref => :PANUKB_REF, 
+            :alt => :PANUKB_ALT,
+            :beta_EUR => :PANUKB_BETA, 
+            :se_EUR => :PANUKB_SE, 
+            :neglog10_pval_EUR => :PANUKB_LOG10P,
+            :low_confidence_EUR => :PANUKB_LOW_CONFIDENCE
+        )
+        liftover_gwas_new(gwas_results, liftover_panukb_filename(trait))
+    end
 end
 
 function ref_alt_matching_status(row)
-    if row.ALLELE0 == row.PANUKB_REF && row.ALLELE1 == row.PANUKB_ALT
+    ref_1, alt_1, ref_2, alt_2 = row
+    if ref_1 == ref_2 && alt_1 == alt_2
         return "match"
-    elseif row.ALLELE0 == row.PANUKB_ALT && row.ALLELE1 == row.PANUKB_REF
+    elseif ref_1 == alt_2 && alt_1 == ref_2
         return "swapped"
     else
         return "mismatch"
@@ -144,92 +194,115 @@ function load_csv_files(files)
     end
 end
 
-function liftover_gene_atlas(data_dir)
-    variants_info_files = [joinpath(GENE_ATLAS_DIR, "snps.imputed.chr$chr.csv.gz") for chr in 1:22]
-    trait = "23104-0.0"
-    bmi_files = [joinpath(GENE_ATLAS_DIR, "imputed.allWhites.$trait.chr$chr.csv.gz") for chr in 1:22]
-    colorectal_cancer_files = [joinpath(GENE_ATLAS_DIR, "imputed.allWhites.cancer_c_C18.chr$chr.csv.gz") for chr in 1:22]
-
-    variants_info = load_csv_files(variants_info_files)
-    gwas_results = load_csv_files(bmi_files)
-    gwas_results = innerjoin(gwas_results, variants_info, on=:SNP)
-    select(
-        gwas_results,
-        "CHROM",
-        "Position" => "START",
-        "Position" => "END",
-        "A1" => "GA_REF",
-        "A2" => "GA_ALT",
-        "NBETA-$trait" => "GA_BETA",
-        "NSE-$trait" => "GA_SE",
-        "PV-$trait" => "GA_PV"
-    )
-    all(gwas_results.A2 .== gwas_results.ALLELE)
-
+function load_ga_variants_info(files)
+    return mapreduce(vcat, files) do file
+        df = CSV.read(file, DataFrame)
+        df.CHROM .= replace(split(basename(file), ".")[3], "chr" => "")
+        df
+    end
 end
 
-function compare_pvalues(wdl_gwas_file, panukb_gwas_file)
-    trait = "BMI"
-    wdl_gwas_file = joinpath(data_dir, string("all.", trait, ".gwas.tsv"))
-    panukb_gwas_file = joinpath(data_dir, "continuous-23104-both_sexes-irnt.GRCh38.tsv")
-    # panukb_gwas_file = joinpath(data_dir, "icd10-C18-both_sexes.GRCh38.tsv")
+liftover_ga_filename(trait) = joinpath(GENE_ATLAS_DIR, "gwas.$trait.GRCh38.tsv")
 
-    wdl_gwas = CSV.read(wdl_gwas_file, DataFrame)
-    wdl_gwas.CHROM = string.(wdl_gwas.CHROM)
-    panukb_gwas = CSV.read(panukb_gwas_file, DataFrame)
-    merged_gwas = innerjoin(wdl_gwas, panukb_gwas, on=[:CHROM, :GENPOS]) # TODO: only 17 M remain here, why?
-    transform!(merged_gwas, 
-        AsTable([:ALLELE0, :ALLELE1, :PANUKB_REF, :PANUKB_ALT]) => ByRow(ref_alt_matching_status) => :REF_ALT_STATUS
+function liftover_gene_atlas()
+    @info "Lifting over geneATLAS"
+    variants_info_files = [joinpath(GENE_ATLAS_DIR, "snps.imputed.chr$chr.csv.gz") for chr in 1:22]
+    variants_info = load_ga_variants_info(variants_info_files)
+    trait_map = [
+        "23104-0.0" => "BMI",
+        "cancer_c_C18" => "COLORECTAL_CANCER"
+    ]
+    for (ga_trait, trait) in trait_map
+        @info "Lifting over geneATLAS trait: $trait"
+        isfile(liftover_ga_filename(trait)) && continue
+        gwas_files = [joinpath(GENE_ATLAS_DIR, "imputed.allWhites.$ga_trait.chr$chr.csv.gz") for chr in 1:22]
+        gwas_results = load_csv_files(gwas_files)
+        gwas_results = innerjoin(gwas_results, variants_info, on=:SNP)
+        gwas_results = select(gwas_results,
+            "CHROM", 
+            "Position" => "POS",
+            "SNP" => "GA_ID",
+            "A1" => "GA_REF",
+            "A2" => "GA_ALT",
+            "MAF" => "GA_MAF",
+            "NBETA-$ga_trait" => "GA_BETA",
+            "NSE-$ga_trait" => "GA_SE",
+            "PV-$ga_trait" => (x -> - log10.(x)) => "GA_LOG10P", 
+            "PV-$ga_trait" => "GA_PV",
+        )
+        liftover_gwas_new(gwas_results, liftover_ga_filename(trait))
+    end
+end
+
+find_column(gwas_results; type="REF") = only(filter(x -> endswith(x, type), names(gwas_results)))
+
+function compare_pvalues(gwas_results_1, gwas_results_2)
+    ref_1, alt_1, log10p_1 = find_column(gwas_results_1; type="REF"), find_column(gwas_results_1; type="ALT"), find_column(gwas_results_1; type="LOG10P")
+    ref_2, alt_2, log10p_2 = find_column(gwas_results_2; type="REF"), find_column(gwas_results_2; type="ALT"), find_column(gwas_results_2; type="LOG10P")
+
+    merged_gwas = innerjoin(gwas_results_1, gwas_results_2, on=[:CHROM, :POS]) # TODO: only 17 M remain here, why?
+
+    transform!(merged_gwas,
+        AsTable([ref_1, alt_1, ref_2, alt_2]) => ByRow(ref_alt_matching_status) => :REF_ALT_STATUS
     )
     subset!(merged_gwas, :REF_ALT_STATUS => x -> x .!== "mismatch")
-    merged_gwas[merged_gwas.REF_ALT_STATUS .== "swapped", :]
-
     
-    plot_data = subset(
-        dropmissing(merged_gwas[!, [:PANUKB_LOG10P, :LOG10P, :CHROM, :ALLELE0, :ALLELE1, :PANUKB_LOW_CONFIDENCE, :A1FREQ]]),
-        :PANUKB_LOW_CONFIDENCE => x -> x .== false,
-        :A1FREQ => x -> x .> 0.01,
-        :CHROM => x -> x .== "1"
-    )
+    plot_data = dropmissing(merged_gwas[!, [log10p_1, log10p_2]])
+    
     fig = Figure()
     ax = Axis(fig[1, 1], 
-        xlabel="PanUKB GWAS", 
-        ylabel="WDL GWAS",
-        # xscale=CairoMakie.Makie.pseudolog10,
-        # yscale=CairoMakie.Makie.pseudolog10
+        xlabel=split(log10p_1, "_")[1], 
+        ylabel=split(log10p_2, "_")[1],
     )
     scatter!(ax, 
-        plot_data.PANUKB_LOG10P, 
-        plot_data.LOG10P;
+        plot_data[!, log10p_1], 
+        plot_data[!, log10p_2];
         markersize=6
     )
     ablines!(ax, 0, 1, color=:red)
     fig
-
 end
 
-for trait in ("BMI", "COLORECTAL_CANCER")
-    @info "Plotting Trait: " trait
-    gwas_results = harmonize_gwas_results(CSV.read(joinpath(data_dir, string("all.", trait, ".gwas.tsv")), DataFrame))
-    title = replace(trait, "_" => " ")
-    fig = manhattan_plot(gwas_results; title="")
-    save(joinpath(data_dir, string(trait, ".manhattan.png")), fig)
-    fig = qqplot(gwas_results; title="")
-    save(joinpath(data_dir, string(trait, ".qq.png")), fig)
-end
+function main()
+    liftover_gene_atlas()
+    liftover_panukb()
 
-# phenotypes_manifest = CSV.read(joinpath(data_dir, "phenotype_manifest.tsv"), DataFrame)
-
-function sandbox()
-    s = subset(
-        select(phenotypes_manifest, :description, :description_more, :aws_path, :filename, :num_pops, :pops), 
-        :description => x -> occursin.("BMI", x)
+    trait = "BMI"
+    # Load WDL GWAS
+    wdl_gwas = CSV.read(wdl_gwas_filename(trait), DataFrame, types=Dict("CHROM" => String))
+    rename!(wdl_gwas, 
+        :GENPOS =>:POS, 
+        :ALLELE0 => :WDLGWAS_REF, 
+        :ALLELE1 => :WDLGWAS_ALT,
+        :A1FREQ => :WDLGWAS_ALT_FREQ,
+        :BETA => :WDLGWAS_BETA,
+        :SE => :WDLGWAS_SE,
+        :LOG10P => :WDLGWAS_LOG10P
     )
-    s = subset(
-        select(phenotypes_manifest, :description, :description_more, :aws_path, :filename, :num_pops, :pops), 
-        :description => x -> occursin.("C18 Malignant neoplasm of colon", x)
-    )
+    wdl_gwas_frequent = wdl_gwas[0.01 .< wdl_gwas.WDLGWAS_ALT_FREQ .< 0.99, :]
+    # Load PANUKB GWAS
+    panukb_gwas = CSV.read(liftover_panukb_filename(trait), DataFrame)
+    # Load geneATLAS GWAS
+    ga_gwas = CSV.read(liftover_ga_filename(trait), DataFrame)
+    subset!(ga_gwas, :GA_PV => x -> x .!= 0 .&& x .!= 1, :GA_MAF => x -> x .> 0.01)
 
-    colorectal_panukb = CSV.read(joinpath(data_dir, "icd10-C18-both_sexes.tsv"), DataFrame)
+    compare_pvalues(wdl_gwas_frequent, ga_gwas)
+
+    for trait in ("BMI", "COLORECTAL_CANCER")
+        @info "Plotting Trait: " trait
+        gwas_results = harmonize_gwas_results(CSV.read(joinpath(data_dir, string("all.", trait, ".gwas.tsv")), DataFrame))
+        title = replace(trait, "_" => " ")
+        fig = manhattan_plot(gwas_results; title="")
+        save(joinpath(data_dir, string(trait, ".manhattan.png")), fig)
+        fig = qqplot(gwas_results; title="")
+        save(joinpath(data_dir, string(trait, ".qq.png")), fig)
+    end
+
+    merged_gwas = innerjoin(wdl_gwas, ga_gwas, on=[:CHROM, :POS])
+    merged_gwas.REL_DIFF = abs.(merged_gwas.WDLGWAS_LOG10P .- merged_gwas.GA_LOG10P) ./ merged_gwas.GA_LOG10P
+    sort!(merged_gwas, :REL_DIFF)
+    merged_gwas = merged_gwas[0.01 .< merged_gwas.WDLGWAS_ALT_FREQ .< 0.99, :]
+    merged_gwas = merged_gwas[merged_gwas.WDLGWAS_LOG10P .> 8, :]
+    merged_gwas[!, [:ID, :REL_DIFF, :WDLGWAS_REF, :WDLGWAS_ALT, :GA_REF, :GA_ALT, :WDLGWAS_ALT_FREQ, :GA_MAF, :WDLGWAS_LOG10P, :GA_LOG10P, :GA_BETA, :GA_SE, :WDLGWAS_BETA, :WDLGWAS_SE]]
 
 end
