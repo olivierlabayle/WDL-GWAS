@@ -4,11 +4,11 @@ using DataFrames
 using CairoMakie
 using GeneticsMakie
 
-const data_dir = expanduser("~/Data/WDL_GWAS")
-const WDL_GWAS_DIR = joinpath(data_dir, "wdl_gwas")
-const GENE_ATLAS_DIR = joinpath(data_dir, "gene_atlas")
-const PAN_UKB_DIR = joinpath(data_dir, "panukb")
-const CHAIN_FILE = joinpath(data_dir, "hg19ToHg38.over.chain.gz")
+const DATA_DIR = expanduser("~/Data/WDL_GWAS")
+const WDL_GWAS_DIR = joinpath(DATA_DIR, "wdl_gwas")
+const GENE_ATLAS_DIR = joinpath(DATA_DIR, "gene_atlas")
+const PAN_UKB_DIR = joinpath(DATA_DIR, "panukb")
+const CHAIN_FILE = joinpath(DATA_DIR, "hg19ToHg38.over.chain.gz")
 
 function parse_pvalue(log10_pval::AbstractString)
     if log10_pval == "NA"
@@ -219,7 +219,7 @@ function liftover_gene_atlas()
         gwas_results = load_csv_files(gwas_files)
         gwas_results = innerjoin(gwas_results, variants_info, on=:SNP)
         gwas_results = select(gwas_results,
-            "CHROM", 
+            "CHROM",
             "Position" => "POS",
             "SNP" => "GA_ID",
             "A1" => "GA_REF",
@@ -227,7 +227,7 @@ function liftover_gene_atlas()
             "MAF" => "GA_MAF",
             "NBETA-$ga_trait" => "GA_BETA",
             "NSE-$ga_trait" => "GA_SE",
-            "PV-$ga_trait" => (x -> - log10.(x)) => "GA_LOG10P", 
+            "PV-$ga_trait" => (x -> - log10.(x)) => "GA_LOG10P",
             "PV-$ga_trait" => "GA_PV",
         )
         liftover_gwas_new(gwas_results, liftover_ga_filename(trait))
@@ -290,12 +290,12 @@ function main()
 
     for trait in ("BMI", "COLORECTAL_CANCER")
         @info "Plotting Trait: " trait
-        gwas_results = harmonize_gwas_results(CSV.read(joinpath(data_dir, string("all.", trait, ".gwas.tsv")), DataFrame))
+        gwas_results = harmonize_gwas_results(CSV.read(joinpath(DATA_DIR, string("all.", trait, ".gwas.tsv")), DataFrame))
         title = replace(trait, "_" => " ")
         fig = manhattan_plot(gwas_results; title="")
-        save(joinpath(data_dir, string(trait, ".manhattan.png")), fig)
+        save(joinpath(DATA_DIR, string(trait, ".manhattan.png")), fig)
         fig = qqplot(gwas_results; title="")
-        save(joinpath(data_dir, string(trait, ".qq.png")), fig)
+        save(joinpath(DATA_DIR, string(trait, ".qq.png")), fig)
     end
 
     merged_gwas = innerjoin(wdl_gwas, ga_gwas, on=[:CHROM, :POS])
