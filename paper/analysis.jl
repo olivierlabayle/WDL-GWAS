@@ -8,6 +8,7 @@ const DATA_DIR = expanduser("~/Data/WDL_GWAS")
 const WDL_GWAS_DIR = joinpath(DATA_DIR, "wdl_gwas")
 const GENE_ATLAS_DIR = joinpath(DATA_DIR, "gene_atlas")
 const PAN_UKB_DIR = joinpath(DATA_DIR, "panukb")
+const PLOTS_DIR = joinpath(DATA_DIR, "plots")
 const CHAIN_FILE = joinpath(DATA_DIR, "hg19ToHg38.over.chain.gz")
 
 function parse_pvalue(log10_pval::AbstractString)
@@ -271,7 +272,7 @@ function main()
     # Load WDL GWAS
     wdl_gwas = CSV.read(wdl_gwas_filename(trait), DataFrame, types=Dict("CHROM" => String))
     rename!(wdl_gwas, 
-        :GENPOS =>:POS, 
+        :GENPOS => :POS, 
         :ALLELE0 => :WDLGWAS_REF, 
         :ALLELE1 => :WDLGWAS_ALT,
         :A1FREQ => :WDLGWAS_ALT_FREQ,
@@ -282,6 +283,8 @@ function main()
     wdl_gwas_frequent = wdl_gwas[0.01 .< wdl_gwas.WDLGWAS_ALT_FREQ .< 0.99, :]
     # Load PANUKB GWAS
     panukb_gwas = CSV.read(liftover_panukb_filename(trait), DataFrame)
+    panukb_gwas = CSV.read(joinpath(PAN_UKB_DIR, "gwas.$trait.GRCh38.tsv"), DataFrame)
+
     # Load geneATLAS GWAS
     ga_gwas = CSV.read(liftover_ga_filename(trait), DataFrame)
     subset!(ga_gwas, :GA_PV => x -> x .!= 0 .&& x .!= 1, :GA_MAF => x -> x .> 0.01)
@@ -290,19 +293,15 @@ function main()
 
     for trait in ("BMI", "COLORECTAL_CANCER")
         @info "Plotting Trait: " trait
-        gwas_results = harmonize_gwas_results(CSV.read(joinpath(DATA_DIR, string("all.", trait, ".gwas.tsv")), DataFrame))
-        title = replace(trait, "_" => " ")
+        gwas_results = harmonize_gwas_results(CSV.read(joinpath(WDL_GWAS_DIR, string("all.", trait, ".gwas.tsv")), DataFrame))
         fig = manhattan_plot(gwas_results; title="")
-        save(joinpath(DATA_DIR, string(trait, ".manhattan.png")), fig)
+        save(joinpath(PLOTS_DIR, string(trait, ".manhattan.png")), fig)
         fig = qqplot(gwas_results; title="")
-        save(joinpath(DATA_DIR, string(trait, ".qq.png")), fig)
+        save(joinpath(PLOTS_DIR, string(trait, ".qq.png")), fig)
     end
 
-    merged_gwas = innerjoin(wdl_gwas, ga_gwas, on=[:CHROM, :POS])
-    merged_gwas.REL_DIFF = abs.(merged_gwas.WDLGWAS_LOG10P .- merged_gwas.GA_LOG10P) ./ merged_gwas.GA_LOG10P
-    sort!(merged_gwas, :REL_DIFF)
-    merged_gwas = merged_gwas[0.01 .< merged_gwas.WDLGWAS_ALT_FREQ .< 0.99, :]
-    merged_gwas = merged_gwas[merged_gwas.WDLGWAS_LOG10P .> 8, :]
-    merged_gwas[!, [:ID, :REL_DIFF, :WDLGWAS_REF, :WDLGWAS_ALT, :GA_REF, :GA_ALT, :WDLGWAS_ALT_FREQ, :GA_MAF, :WDLGWAS_LOG10P, :GA_LOG10P, :GA_BETA, :GA_SE, :WDLGWAS_BETA, :WDLGWAS_SE]]
-
+    # Finemapping
+    bmi_fp = CSV.read(joinpath(WDL_GWAS_DIR, "all.BMI.finemapping.tsv"), DataFrame)
+    rs1421085_locus = bmi_fp[bmi_fp.LOCUS_ID .== "16:53767042:T:C", :]
+    rs1421085_locus[rs1421085_locus.ID .== "16:53767042:T:C", :]
 end

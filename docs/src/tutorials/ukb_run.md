@@ -10,9 +10,12 @@ In this example, we provide a tutorial to reproduce the two GWAS studies perform
 | **Step** | **Total Time** | **Active Time** | **Expected Price** |
 | :---     | :------------: | :-------------: | :----------------: |
 | Covariates Preparation | 30 minutes | 20 minutes | £0 |
-| Genotypes Preparation | 4 hours | 10 minutes | £21 |
-| GWAS | | 10 minutes | |
-| Total | | 40 minutes | |
+| Genotypes Preparation | 4 hours | 10 minutes | £20 |
+| GWAS | 1.5 days | 10 minutes | £130 |
+| Total | 2 days | 40 minutes | £150 |
+
+!!! warning
+    Body mass index has many significant loci across the genome, making this run quite expensive. This is because each of them will be fine-mapped. For a cheaper run, restrict the following analysis to colorectal cancer or any trait of interest to you.
 
 ## Creating the Covariates File
 
@@ -216,7 +219,13 @@ Of course you can change the destination `/wdl_gwas_paper_outputs` to your need.
 
 ## Outputs
 
-Outputs will be stored in the `/workflow_outputs//` folder. Since the RAP preserves intermediate files, this will be quite dense.
+The workflow outputs will be stored in the `/wdl_gwas_paper_outputs/` folder. 
 
-- plots: searching for `png`
-- group/phenotype results: searching for `regenie.results.${group_name}.${phenotype}.tsv`
+- In particular, the asscociated summary statistics can be found in `all.TRAIT.gwas.tsv` where `TRAIT` is either `BMI` or `COLORECTAL_CANCER`. The `all` prefix indicates that no groups were provided. Similarly, Manhattan and QQ plots are named `all.TRAIT.manhattan.png` and `all.TRAIT.qq.png` and displayed below as an illustration.
+
+![WDL GWAS Outputs](../assets/outputs.png)
+
+
+- Fine-mapping results are stored in files named `all.TRAIT.finemapping.tsv` with `TRAIT` being either `BMI` or `COLORECTAL_CANCER` as before. Furthermore, a locus plot will be created for each fine-mapped locus. These plots are named `all.TRAIT.LEAD_VARIANT_ID.locuszoom.png` where the `LEAD_VARIANT_ID` tags the locus. For instance, the locus tagged by the classic FTO variant rs1421085 is found in `all.BMI.16_53767042_T_C.locuszoom.png`. It has been assigned to a credible set with posterior inclusion probability 0.35, the highest in the set.
+
+![rs1421085](../assets/BMI.rs1421085.locuszoom.png)
