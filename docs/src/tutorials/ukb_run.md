@@ -1,10 +1,5 @@
 # Running WDL-GWAS on the UK Biobank RAP
 
-
-
-!!! note
-    This page is under development!
-
 In this example, we provide a tutorial to reproduce the two GWAS studies performed in the WDL-GWAS paper: BMI and colorectal cancer. This involves a bit more than running the workflow since we need to prepare the data for it. Also, since you will be interacting with the RAP and real world data, this involves costs and some time investment (however most of the time is just waiting for jobs to finish so you can do something else).
 
 | **Step** | **Total Time** | **Active Time** | **Expected Price** |
@@ -15,7 +10,7 @@ In this example, we provide a tutorial to reproduce the two GWAS studies perform
 | Total | 2 days | 40 minutes | £150 |
 
 !!! warning
-    Body mass index has many significant loci across the genome, making this run quite expensive. This is because each of them will be fine-mapped. For a cheaper run, restrict the following analysis to colorectal cancer or any trait of interest to you.
+    Body mass index has many significant loci across the genome, making this run quite expensive. This is because each of them will be fine-mapped. For a cheaper run, restrict the following analysis to colorectal cancer or any trait of interest to you which should cost about £40.
 
 ## Creating the Covariates File
 

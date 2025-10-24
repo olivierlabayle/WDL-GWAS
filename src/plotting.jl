@@ -31,8 +31,12 @@ function harmonize_finemapping_results(finemapping_results)
 end
 
 function manhattan_plot(gwas_results; title="Manhattan Plot", build=38)
-    fig = Figure(size = (1200, 600))
-    ax = Axis(fig[1, 1], xlabel="Chromosome", ylabel="-log10(P)")
+    fig = Figure(size = (792, 408))
+    ax = Axis(fig[1, 1],
+        xlabel="Chromosome",
+        ylabel="-log10(P)",
+        yscale=CairoMakie.Makie.pseudolog10
+    )
     GeneticsMakie.plotgwas!(ax, gwas_results, build=build)
     hidespines!(ax, :t, :r)
     Label(fig[1, 1, Top()], text = title, fontsize = 20)
@@ -54,7 +58,7 @@ function get_gencode_annotations(;gencode_file = "gencode.v49.annotation.gtf.gz"
 end
 
 function qqplot(gwas_results; title="QQ Plot")
-    fig = Figure(size = (800, 800))
+    fig = Figure(size = (792, 792))
     ax = Axis(fig[1, 1])
     GeneticsMakie.plotqq!(ax, gwas_results; ystep = 5)
     hidespines!(ax, :t, :r)
@@ -82,7 +86,8 @@ function region_plot(region_data)
     threshold = 5e-8
     fig = Figure(size = (1000, 800))
     # GWAS P-values
-    ax1 = Axis(fig[1, 1]; ylabel="-log10(P)", 
+    ax1 = Axis(fig[1, 1]; ylabel="-log10(P)",
+        yautolimitmargin = (0.05, 0.15),
         xticksvisible=false, 
         xticklabelsvisible=false, 
         xgridvisible=false,
@@ -113,6 +118,7 @@ function region_plot(region_data)
     )
     cs_to_color = Dict{Any, Any}(credible_sets .=> credible_sets_colors)
     ax2 = Axis(fig[2, 1]; ylabel="PIP",
+        yautolimitmargin = (0.05, 0.15),
         xticksvisible=false, 
         xticklabelsvisible=false, 
         xgridvisible=false,
@@ -139,12 +145,14 @@ function region_plot(region_data)
             colormap=:tab10
         )
     end
-    pips_legend_elements = [(string("CS ", cs), PolyElement(color=cs_color, colorrange=1:10, colormap=:tab10)) for (cs, cs_color) in enumerate(credible_sets_colors)]
+    cs_sizes = [count(==(cs), skipmissing(region_data.CS)) for cs in credible_sets]
+    pips_legend_elements = [(string("N=", cs_size), PolyElement(color=cs_color, colorrange=1:10, colormap=:tab10)) for (cs_size, cs_color) in zip(cs_sizes, credible_sets_colors)]
     Legend(fig[2, 2], getindex.(pips_legend_elements, 2), getindex.(pips_legend_elements, 1), "CSs (converged=$susie_converged)", framevisible = false)
     # Genomic annotations
     ax3 = Axis(fig[3, 1]; 
         xlabel=string("Chr", chr),
         ylabel="Genes",
+        yautolimitmargin = (0.05, 0.15),
         yticksvisible=false,
         yticklabelsvisible=false,
         xgridvisible=false,

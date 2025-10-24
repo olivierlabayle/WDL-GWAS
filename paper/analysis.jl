@@ -3,7 +3,13 @@ using CSV
 using DataFrames
 using CairoMakie
 using GeneticsMakie
+using HTTP
+using JSON
+using Colors
 
+include(joinpath("src", "plotting.jl"))
+
+const ENSEMBL_SERVER = "https://rest.ensembl.org"
 const DATA_DIR = expanduser("~/Data/WDL_GWAS")
 const WDL_GWAS_DIR = joinpath(DATA_DIR, "wdl_gwas")
 const GENE_ATLAS_DIR = joinpath(DATA_DIR, "gene_atlas")
@@ -294,14 +300,24 @@ function main()
     for trait in ("BMI", "COLORECTAL_CANCER")
         @info "Plotting Trait: " trait
         gwas_results = harmonize_gwas_results(CSV.read(joinpath(WDL_GWAS_DIR, string("all.", trait, ".gwas.tsv")), DataFrame))
-        fig = manhattan_plot(gwas_results; title="")
+        fig = manhattan_plot(gwas_results; title=" ")
         save(joinpath(PLOTS_DIR, string(trait, ".manhattan.png")), fig)
-        fig = qqplot(gwas_results; title="")
+        fig = qqplot(gwas_results; title=" ")
         save(joinpath(PLOTS_DIR, string(trait, ".qq.png")), fig)
     end
 
     # Finemapping
-    bmi_fp = CSV.read(joinpath(WDL_GWAS_DIR, "all.BMI.finemapping.tsv"), DataFrame)
-    rs1421085_locus = bmi_fp[bmi_fp.LOCUS_ID .== "16:53767042:T:C", :]
+    trait = "BMI"
+    gwas_results = harmonize_gwas_results(CSV.read(joinpath(WDL_GWAS_DIR, string("all.", trait, ".gwas.tsv")), DataFrame))
+    finemapping_results = harmonize_finemapping_results(CSV.read(joinpath(WDL_GWAS_DIR, string("all.", trait, ".finemapping.tsv")), DataFrame, delim="\t"))
+    bmi_fp = finemapping_results[finemapping_results.LOCUS_ID .== "16:53767042:T:C", :]
+    region_data = innerjoin(
+            gwas_results,
+            DataFrames.select(bmi_fp, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2, :SUSIE_CONVERGED]), 
+            on=[:ID]
+    )
+
+    fig = region_plot(region_data)
+
     rs1421085_locus[rs1421085_locus.ID .== "16:53767042:T:C", :]
 end
