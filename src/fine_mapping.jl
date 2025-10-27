@@ -85,37 +85,14 @@ function write_significant_clumps(pgen_prefix, gwas_results_file;
     return sig_clumps
 end
 
-function locus_from_r2s(group, group_key; r2_threshold=0.1, padding=10)
-    lead_idx = findfirst(==(group_key), group.ID_B)
-    chr = first(group.CHROM_B)
-    # Define locus start
-    locus_start_idx = findfirst(>=(r2_threshold), group.UNPHASED_R2)
-    if locus_start_idx === nothing || locus_start_idx > lead_idx
-        locus_start_idx = lead_idx
-    end
-    locus_start_idx = max(1, locus_start_idx - padding)
-    locus_start_pos = group.POS_B[locus_start_idx]
-
-    # Define locus end
-    locus_end_idx = findlast(>=(r2_threshold), group.UNPHASED_R2)
-    if locus_end_idx === nothing || locus_end_idx < lead_idx
-        locus_end_idx = lead_idx
-    end
-    locus_end_idx = min(nrow(group), locus_end_idx + padding)
-    locus_end_pos = group.POS_B[locus_end_idx]
-
-    return (group_key, chr, locus_start_pos, locus_end_pos)
-end
-
 function genotypes_from_pgen(pgen_prefix, locus)
-    locus_id, chr, locus_start, locus_end = locus
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "dosage")
     run(`plink2 \
         --pfile $pgen_prefix \
-        --from-bp $locus_start \
-        --to-bp $locus_end \
-        --chr $chr \
+        --from-bp $(locus.locus_start) \
+        --to-bp $(locus.locus_end) \
+        --chr $(locus.chr) \
         --export A \
         --out $output_prefix`
     )
@@ -135,7 +112,7 @@ function genotypes_from_pgen(pgen_prefix, locus)
         end
     end
     pvar = PopGen.read_pvar(pgen_prefix * ".pvar")
-    pvar = pvar[locus_start .<= pvar.POS .<= locus_end, :]
+    pvar = pvar[locus.locus_start .<= pvar.POS .<= locus.locus_end, :]
     @assert new_colnames[3:end] == pvar.ID
     rename!(X_df, new_colnames)
     rename!(pvar, "#CHROM" => "CHROM")
@@ -179,14 +156,17 @@ function susie_finemap(X, y; n_causal=10, max_iter = 1000)
     return @rget fitted
 end
 
-function get_r2_with_variant(variant_id, pgen_prefix; ld_window_kb=1000)
+function compute_lead_to_locus_r2(locus, pgen_prefix)
     tmpdir = mktempdir()
-    out_prefix = joinpath(tmpdir, "$variant_id.LD")
+    out_prefix = joinpath(tmpdir, "$(locus.lead_id).LD")
     run(`plink2 \
         --pfile $pgen_prefix \
         --r2-unphased \
-        --ld-snp $variant_id \
-        --ld-window-kb $ld_window_kb \
+        --from-bp $(locus.locus_start) \
+        --to-bp $(locus.locus_end) \
+        --chr $(locus.chr) \
+        --ld-snp $(locus.lead_id) \
+        --ld-window-kb 9999999 \
         --ld-window-r2 0 \
         --out $out_prefix
     `)
@@ -229,30 +209,23 @@ function postprocess_finemapping_results!(variants_info, finemapping_results, ld
     return select!(variants_info, :CHROM, :POS, :ID, :REF, :ALT, :LOCUS_ID, :PIP, :CS, :UNPHASED_R2, :SUSIE_CONVERGED)
 end
 
-function finemap_locus(variant_ID, pgen_prefix, y_df;
-    n_causal=10,
-    finemap_window_kb=1000,
-    r2_threshold=0.1,
-    padding=10
-    )
-    r2s_with_lead = get_r2_with_variant(variant_ID, pgen_prefix; ld_window_kb=finemap_window_kb)
-    locus = locus_from_r2s(r2s_with_lead, variant_ID; r2_threshold=r2_threshold, padding=padding)
+function finemap_locus(locus, pgen_prefix, y_df; n_causal=10)
+    lead_to_locus_r2 = compute_lead_to_locus_r2(locus, pgen_prefix)
     X_df, variants_info = genotypes_from_pgen(pgen_prefix, locus)
     X, y = get_susie_inputs(X_df, y_df)
     finemapping_results = susie_finemap(X, y; n_causal=n_causal)
-    return postprocess_finemapping_results!(variants_info, finemapping_results, r2s_with_lead)
+    return postprocess_finemapping_results!(variants_info, finemapping_results, lead_to_locus_r2)
 end
 
 function get_LD_matrix(pgen_prefix, locus)
-    _, chr, locus_start, locus_end = locus
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "ld_matrix")
     run(`plink2 \
         --pfile $pgen_prefix \
         --r-unphased square ref-based \
-        --chr $chr \
-        --from-bp $locus_start \
-        --to-bp $locus_end \
+        --chr $(locus.chr) \
+        --from-bp $(locus.locus_start) \
+        --to-bp $(locus.locus_end) \
         --out $output_prefix`
     )
     R = readdlm(string(output_prefix, ".unphased.vcor1"))
@@ -294,18 +267,12 @@ function initialize_variants_info_rss(pgen_prefix, variants, gwas_results)
     return select!(variants_info, :CHROM, :POS, :ID, :REF, :ALT, :BETA, :SE)
 end
 
-function finemap_locus_rss(variant_ID, gwas_results, pgen_prefix, y;
-                n_causal=n_causal,
-                finemap_window_kb=finemap_window_kb,
-                r2_threshold=0.1,
-                padding=10
-            )
-    r2s_with_lead = get_r2_with_variant(variant_ID, pgen_prefix; ld_window_kb=finemap_window_kb)
-    locus = locus_from_r2s(r2s_with_lead, variant_ID; r2_threshold=r2_threshold, padding=padding)
+function finemap_locus_rss(locus, gwas_results, pgen_prefix, y; n_causal=n_causal)
+    lead_to_locus_r2 = compute_lead_to_locus_r2(locus, pgen_prefix)
     R, variants = get_LD_matrix(pgen_prefix, locus)
     variants_info = initialize_variants_info_rss(pgen_prefix, variants, gwas_results)
     finemapping_results = susie_rss_finemap(R, variants_info, y; n_causal=n_causal)
-    return postprocess_finemapping_results!(variants_info, finemapping_results, r2s_with_lead)
+    return postprocess_finemapping_results!(variants_info, finemapping_results, lead_to_locus_r2)
 end
 
 function make_clean_sample_file(input_sample_file; exclude=[], phenotype="Y")
@@ -337,6 +304,59 @@ function read_samples(sample_file)
 end
 
 """
+
+    loci_from_clumps(sig_clumps, gwas_matched_pgen_prefix; padding=10)
+
+Loci are defined from clumps with the following rules:
+- padding is applied to make sure the window extends on both side of the lead variant (clumped variants could only either be on left or right due to LD)
+- Overlapping clumps (by POS) are merged together
+- In that case, the lead variant is updated to be the one with the lowest p-value
+"""
+function loci_from_clumps(sig_clumps, gwas_matched_pgen_prefix; padding=10)
+    sig_clumps = sort(sig_clumps, :POS)
+    pvar = PopGen.read_pvar(gwas_matched_pgen_prefix * ".pvar")
+    loci = []
+    for clump_row in eachrow(sig_clumps)
+        clump_variant_ids = vcat(clump_row.ID, split(clump_row.SP2, ","))
+        clumped_idx = [findfirst(==(x), pvar.ID) for x in clump_variant_ids]
+        locus_start_idx = max(minimum(clumped_idx) - padding, 1)
+        locus_end_idx = min(maximum(clumped_idx) + padding, nrow(pvar))
+        locus_start, locus_end = extrema(pvar[locus_start_idx:locus_end_idx, :POS])
+        if isempty(loci)
+            push!(loci, (
+                lead_id=clump_row.ID,
+                neglog10pval = clump_row.NEG_LOG10_P,
+                locus_start=locus_start, 
+                locus_end=locus_end, 
+                chr=clump_row["#CHROM"]
+            ))
+        else
+            previous_locus = loci[end]
+            # If the two clumps overlap they will be merged
+            if locus_start <= previous_locus.locus_end
+                # If the new p-value is lower, we update the lead variant
+                update_info = clump_row.NEG_LOG10_P > previous_locus.neglog10pval ?
+                    (lead_id = clump_row.ID, neglog10pval=clump_row.NEG_LOG10_P, locus_end=locus_end) :
+                    ()
+                updated_locus = merge(previous_locus, update_info)
+                loci[end] = updated_locus
+            else
+                # Otherwise we append the new independent locus
+                push!(loci,
+                    (
+                    lead_id=clump_row.ID,
+                    neglog10pval = clump_row.NEG_LOG10_P,
+                    locus_start=locus_start, 
+                    locus_end=locus_end, 
+                    chr=clump_row["#CHROM"]
+                ))
+            end
+        end
+    end
+    return loci
+end
+
+"""
     finemap_significant_regions(
         gwas_results_file,
         pgen_prefix,
@@ -351,7 +371,6 @@ end
         clump_id_field = "ID",
         clump_pval_field = "LOG10P",
         allele_1_field = "ALLELE_1",
-        finemap_window_kb=1000,
         n_causal = 10
         )
 
@@ -375,7 +394,6 @@ This function performs fine-mapping of significant regions identified from GWAS 
 - `clump_id_field::String`: Column name in GWAS results for variant IDs.
 - `clump_pval_field::String`: Column name in GWAS results for p-values.
 - `allele_1_field::String`: Column name in GWAS results for allele 1.
-- `finemap_window_kb::Int`: Window size in kb for LD calculation around lead variant to define the fine mapping region.
 - `n_causal::Int`: Number of causal variants to assume in SuSiE fine-mapping.
 - `phenotype::String`: Name of the phenotype column in the covariates file.
 - `rss::Bool`: Whether to use summary statistics fine-mapping.
@@ -395,7 +413,6 @@ function finemap_significant_regions(
     clump_id_field = "ID",
     clump_pval_field = "LOG10P",
     allele_1_field = "ALLELE_1",
-    finemap_window_kb=1000,
     n_causal = 10,
     phenotype="Y",
     rss=false,
@@ -437,22 +454,13 @@ function finemap_significant_regions(
     # Finemap each clump
     y_df = load_phenotypes_matching_samples(covariates_file, sample_file, phenotype)
     finemapping_results = []
-    for clump in eachrow(sig_clumps)
-        @info "Fine Mapping locus led by : $(clump.ID)"
+    loci = loci_from_clumps(sig_clumps, gwas_matched_pgen_prefix; padding=padding)
+    for (locus_idx, locus) in enumerate(loci)
+        @info "Fine-Mapping locus led by : $(locus.lead_id) ($locus_idx/$(length(loci)))"
         clump_finemapping_results = if rss
-            finemap_locus_rss(clump.ID, gwas_results, gwas_matched_pgen_prefix, y_df[!, phenotype];
-                n_causal=n_causal,
-                finemap_window_kb=finemap_window_kb,
-                r2_threshold=r2_threshold,
-                padding=padding
-            )
+            finemap_locus_rss(locus, gwas_results, gwas_matched_pgen_prefix, y_df[!, phenotype]; n_causal=n_causal)
         else
-            finemap_locus(clump.ID, gwas_matched_pgen_prefix, y_df;
-                n_causal=n_causal,
-                finemap_window_kb=finemap_window_kb,
-                r2_threshold=r2_threshold,
-                padding=padding
-            )
+            finemap_locus(locus, gwas_matched_pgen_prefix, y_df; n_causal=n_causal)
         end
         push!(finemapping_results, clump_finemapping_results)
     end

@@ -148,6 +148,7 @@ dx run -y \
 -f docs/src/assets/extract-ukb-genotypes.inputs.dx.json \
 --priority high \
 --destination /ukb_extracted_genotypes/ \
+--preserve-job-outputs \
 /workflows/extract_genotypes/extract_ukb_genotypes
 ```
 
@@ -206,6 +207,7 @@ Then, to run WDL-GWAS:
 dx run -y \
 -f docs/src/assets/paper.inputs.dx.json \
 --priority high \
+--preserve-job-outputs \
 --destination /wdl_gwas_paper_outputs/ \
 /workflows/gwas/gwas
 ```

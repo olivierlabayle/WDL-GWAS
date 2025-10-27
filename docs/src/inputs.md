@@ -49,7 +49,6 @@ Finemapping proceeds in two stages. First clumps are formed using [plink2 LD-bas
 - `r2_threshold` (default: `0.1`): The LD between the lead variant and other variants in the clump must also as strong as `r2_threshold`.
 - `clump_kb` (default: `250`): The maximum distance between the lead variant and a clumped variant.
 - `n_causal` (default: `10`): SuSiE's `L` variable, the expected number of causal variants in a locus.
-- `finemap_window_kb` (default: `250`): Defines the size of the finemapping window.
 - `finemap_strategy` (default: `rss`): Either `rss` fine-mapping will use the summary stats from the GWAS step. Any other option (e.g., `all`) leads to individual level data-based fine-mapping.
 
 ## Meta-Analysis Options

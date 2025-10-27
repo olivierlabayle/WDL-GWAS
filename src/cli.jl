@@ -102,10 +102,6 @@ function cli_settings()
             arg_type = Int
             help = "Number of causal variants to assume in fine-mapping."
             default = 10
-        "--finemap-window-kb"
-            arg_type = Int
-            help = "Window size (in kb) to compute LD matrix for fine-mapping."
-            default = 1000
         "--phenotype"
             arg_type = String
             help = "Name of the phenotype column in the covariates file."
@@ -255,7 +251,6 @@ function julia_main()::Cint
             r2_threshold=cmd_settings["r2-threshold"],
             clump_kb=cmd_settings["clump-kb"],
             n_causal=cmd_settings["n-causal"],
-            finemap_window_kb=cmd_settings["finemap-window-kb"],
             phenotype=cmd_settings["phenotype"],
             rss=cmd_settings["rss"],
             exclude_string=cmd_settings["exclude"]

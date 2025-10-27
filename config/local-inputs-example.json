@@ -10,7 +10,6 @@
     "gwas.min_cases_controls": "600",
     "gwas.r2_threshold": "0",
     "gwas.clump_kb": "30000",
-    "gwas.finemap_window_kb": "30000",
     "gwas.lead_pvalue": "0.3",
     "gwas.p2_pvalue": "0.3",
     "gwas.min_sig_clump_size": "2",

@@ -48,7 +48,6 @@ workflow gwas {
         String r2_threshold = "0.1"
         String clump_kb = "250"
         String n_causal = "10"
-        String finemap_window_kb = clump_kb
         String finemap_strategy = "rss"
         # Meta analysis
         Boolean meta_analysis = length(groupby) > 0
@@ -188,7 +187,6 @@ workflow gwas {
                     r2_threshold = r2_threshold,
                     clump_kb = clump_kb,
                     n_causal = n_causal,
-                    finemap_window_kb = finemap_window_kb,
                     finemap_strategy = finemap_strategy
             }
         }
@@ -256,7 +254,6 @@ workflow gwas {
                         r2_threshold = r2_threshold,
                         clump_kb = clump_kb,
                         n_causal = n_causal,
-                        finemap_window_kb = finemap_window_kb,
                         exclude = meta_exclude,
                         phenotype=phenotype
                 }
@@ -464,7 +461,6 @@ task finemapping_summary_stats {
         String r2_threshold = "0.1"
         String clump_kb = "1000"
         String n_causal = "10"
-        String finemap_window_kb = "1000"
         Array[String] exclude = []
         String phenotype
     }
@@ -489,7 +485,6 @@ task finemapping_summary_stats {
             --r2-threshold=~{r2_threshold} \
             --clump-kb=~{clump_kb} \
             --n-causal=~{n_causal} \
-            --finemap-window-kb=~{finemap_window_kb} \
             --phenotype=~{phenotype} \
             --rss \
             --exclude=~{sep="," exclude}
@@ -525,7 +520,6 @@ task finemapping {
         String r2_threshold = "0.1"
         String clump_kb = "1000"
         String n_causal = "10"
-        String finemap_window_kb = "1000"
         String finemap_strategy = "rss" # or "full"
     }
 
@@ -550,7 +544,6 @@ task finemapping {
             --r2-threshold=~{r2_threshold} \
             --clump-kb=~{clump_kb} \
             --n-causal=~{n_causal} \
-            --finemap-window-kb=~{finemap_window_kb} \
             --phenotype=${phenotype} ${finemap_opt}
     >>>
 
