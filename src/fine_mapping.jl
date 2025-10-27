@@ -48,7 +48,7 @@ function write_new_pgen_from_gwas_results(input_pgen_prefix, output_pgen_prefix,
     `)
 end
 
-function write_significant_clumps(pgen_prefix, gwas_results_file;
+function get_significant_clumps(pgen_prefix, gwas_results_file;
     min_sig_clump_size = 3,
     output = "clumps.sig.tsv",
     lead_pvalue = 5e-8,
@@ -117,13 +117,6 @@ function genotypes_from_pgen(pgen_prefix, locus)
     rename!(X_df, new_colnames)
     rename!(pvar, "#CHROM" => "CHROM")
     return X_df, pvar
-end
-
-function get_window_idxs(locus, variants_pos)
-    _, _, locus_start, locus_end = locus
-    idx_inf = findfirst(==(locus_start), variants_pos)
-    idx_sup = findlast(==(locus_end), variants_pos)
-    return idx_inf, idx_sup
 end
 
 function load_phenotypes_matching_samples(covariates_file, sample_file, phenotype)
@@ -439,7 +432,7 @@ function finemap_significant_regions(
 
     # Find clumps
     @info "Finding clumps in GWAS-matched PGEN fileset"
-    sig_clumps = write_significant_clumps(gwas_matched_pgen_prefix, gwas_results_file;
+    sig_clumps = get_significant_clumps(gwas_matched_pgen_prefix, gwas_results_file;
         min_sig_clump_size = min_sig_clump_size,
         output = string(output_prefix, ".clumps.tsv"),
         lead_pvalue = lead_pvalue,
