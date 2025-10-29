@@ -49,6 +49,7 @@ workflow gwas {
         String clump_kb = "250"
         String n_causal = "10"
         String finemap_strategy = "rss"
+        String susie_max_iter = "1000"
         # Meta analysis
         Boolean meta_analysis = length(groupby) > 0
         Array[String] meta_exclude = ["ADMIXED"]
@@ -187,6 +188,7 @@ workflow gwas {
                     r2_threshold = r2_threshold,
                     clump_kb = clump_kb,
                     n_causal = n_causal,
+                    susie_max_iter = susie_max_iter,
                     finemap_strategy = finemap_strategy
             }
         }
@@ -255,6 +257,7 @@ workflow gwas {
                         clump_kb = clump_kb,
                         n_causal = n_causal,
                         exclude = meta_exclude,
+                        susie_max_iter = susie_max_iter,
                         phenotype=phenotype
                 }
             }
@@ -461,6 +464,7 @@ task finemapping_summary_stats {
         String r2_threshold = "0.1"
         String clump_kb = "1000"
         String n_causal = "10"
+        String susie_max_iter = "1000"
         Array[String] exclude = []
         String phenotype
     }
@@ -486,6 +490,7 @@ task finemapping_summary_stats {
             --clump-kb=~{clump_kb} \
             --n-causal=~{n_causal} \
             --phenotype=~{phenotype} \
+            --susie-max-iter=~{susie_max_iter} \
             --rss \
             --exclude=~{sep="," exclude}
     >>>
@@ -521,6 +526,7 @@ task finemapping {
         String clump_kb = "1000"
         String n_causal = "10"
         String finemap_strategy = "rss" # or "full"
+        String susie_max_iter = "1000"
     }
 
     command <<<
@@ -544,6 +550,7 @@ task finemapping {
             --r2-threshold=~{r2_threshold} \
             --clump-kb=~{clump_kb} \
             --n-causal=~{n_causal} \
+            --susie-max-iter=~{susie_max_iter} \
             --phenotype=${phenotype} ${finemap_opt}
     >>>
 

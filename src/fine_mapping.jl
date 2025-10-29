@@ -202,11 +202,14 @@ function postprocess_finemapping_results!(variants_info, finemapping_results, ld
     return select!(variants_info, :CHROM, :POS, :ID, :REF, :ALT, :LOCUS_ID, :PIP, :CS, :UNPHASED_R2, :SUSIE_CONVERGED)
 end
 
-function finemap_locus(locus, pgen_prefix, y_df; n_causal=10)
+function finemap_locus(locus, pgen_prefix, y_df; 
+    n_causal=10, 
+    susie_max_iter=1000
+    )
     lead_to_locus_r2 = compute_lead_to_locus_r2(locus, pgen_prefix)
     X_df, variants_info = genotypes_from_pgen(pgen_prefix, locus)
     X, y = get_susie_inputs(X_df, y_df)
-    finemapping_results = susie_finemap(X, y; n_causal=n_causal)
+    finemapping_results = susie_finemap(X, y; n_causal=n_causal, max_iter=susie_max_iter)
     return postprocess_finemapping_results!(variants_info, finemapping_results, lead_to_locus_r2)
 end
 
@@ -260,11 +263,14 @@ function initialize_variants_info_rss(pgen_prefix, variants, gwas_results)
     return select!(variants_info, :CHROM, :POS, :ID, :REF, :ALT, :BETA, :SE)
 end
 
-function finemap_locus_rss(locus, gwas_results, pgen_prefix, y; n_causal=n_causal)
+function finemap_locus_rss(locus, gwas_results, pgen_prefix, y; 
+    n_causal=10,
+    susie_max_iter=1000
+    )
     lead_to_locus_r2 = compute_lead_to_locus_r2(locus, pgen_prefix)
     R, variants = get_LD_matrix(pgen_prefix, locus)
     variants_info = initialize_variants_info_rss(pgen_prefix, variants, gwas_results)
-    finemapping_results = susie_rss_finemap(R, variants_info, y; n_causal=n_causal)
+    finemapping_results = susie_rss_finemap(R, variants_info, y; n_causal=n_causal, max_iter=susie_max_iter)
     return postprocess_finemapping_results!(variants_info, finemapping_results, lead_to_locus_r2)
 end
 
@@ -363,6 +369,7 @@ end
         clump_kb = 250,
         clump_id_field = "ID",
         clump_pval_field = "LOG10P",
+        susie_max_iter=1000,
         allele_1_field = "ALLELE_1",
         n_causal = 10
         )
@@ -390,6 +397,7 @@ This function performs fine-mapping of significant regions identified from GWAS 
 - `n_causal::Int`: Number of causal variants to assume in SuSiE fine-mapping.
 - `phenotype::String`: Name of the phenotype column in the covariates file.
 - `rss::Bool`: Whether to use summary statistics fine-mapping.
+- `susie_max_iter::Int`: Maximum number of iterations used by the SuSiE algorithm.
 - `exclude_string::String`: Comma-separated list of group name patterns to exclude from the sample file.
 """
 function finemap_significant_regions(
@@ -407,6 +415,7 @@ function finemap_significant_regions(
     clump_pval_field = "LOG10P",
     allele_1_field = "ALLELE_1",
     n_causal = 10,
+    susie_max_iter=1000,
     phenotype="Y",
     rss=false,
     exclude_string="",
@@ -451,9 +460,20 @@ function finemap_significant_regions(
     for (locus_idx, locus) in enumerate(loci)
         @info "Fine-Mapping locus led by : $(locus.lead_id) ($locus_idx/$(length(loci)))"
         clump_finemapping_results = if rss
-            finemap_locus_rss(locus, gwas_results, gwas_matched_pgen_prefix, y_df[!, phenotype]; n_causal=n_causal)
+            finemap_locus_rss(locus, 
+                gwas_results, 
+                gwas_matched_pgen_prefix, 
+                y_df[!, phenotype]; 
+                n_causal=n_causal,
+                susie_max_iter=susie_max_iter
+            )
         else
-            finemap_locus(locus, gwas_matched_pgen_prefix, y_df; n_causal=n_causal)
+            finemap_locus(locus, 
+                gwas_matched_pgen_prefix, 
+                y_df; 
+                n_causal=n_causal,
+                susie_max_iter=susie_max_iter
+            )
         end
         push!(finemapping_results, clump_finemapping_results)
     end

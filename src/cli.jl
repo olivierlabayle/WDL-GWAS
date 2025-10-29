@@ -109,6 +109,10 @@ function cli_settings()
         "--rss"
             help = "Whether to run fine-mapping using summary statistics (RSS)"
             action = :store_true
+        "--susie-max-iter"
+            help = "Maximum number of SuSiE iterations."
+            default = 1000
+            arg_type = Int
         "--exclude"
             arg_type = String
             help = "List of groups to exclude from the sample file, comma separated."
@@ -253,6 +257,7 @@ function julia_main()::Cint
             n_causal=cmd_settings["n-causal"],
             phenotype=cmd_settings["phenotype"],
             rss=cmd_settings["rss"],
+            susie_max_iter=cmd_settings["susie-max-iter"],
             exclude_string=cmd_settings["exclude"]
         )
     elseif cmd == "meta-analyse"
