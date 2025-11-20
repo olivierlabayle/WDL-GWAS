@@ -1,23 +1,9 @@
 version 1.0
 
-struct PGENFileset {
-    String chr
-    File pgen
-    File psam
-    File pvar
-}
-
-struct PLINKFileset {
-    String chr
-    File bed
-    File bim
-    File fam
-}
-
-struct RegenieStep1Files {
-    Array[File] phenotypes_loco
-    File list
-}
+import "structs.wdl"
+import "pca.wdl"
+import "gwas_step_1.wdl"
+import "gwas_step_2.wdl"
 
 workflow gwas {
     input {
@@ -38,6 +24,10 @@ workflow gwas {
         String maf = "0.01"
         String mac = "10"
         String ip_values = "1000 50 0.05"
+        # PCA parameters
+        String loco_pca = "false"
+        # GWAS software
+        String gwas_software = "regenie"
         # Regenie parameters
         String regenie_cv_folds = "loocv" # or an integer
         String regenie_bsize = "1000"
@@ -108,17 +98,16 @@ workflow gwas {
         }
 
         # Perform LOCO PCA
-        scatter (imputed_chr_fileset in imputed_genotypes) {
-            call loco_pca {
-                input:
-                    docker_image = docker_image,
-                    chr = imputed_chr_fileset.chr,
-                    bed_file = groups_ld_prune.ld_pruned_fileset.bed,
-                    bim_file = groups_ld_prune.ld_pruned_fileset.bim,
-                    fam_file = groups_ld_prune.ld_pruned_fileset.fam,
-                    npcs = npcs,
-                    approx = approx_pca
-            }
+        call pca.compute_pcs as compute_pcs {
+            input:
+                docker_image = docker_image,
+                imputed_genotypes = imputed_genotypes,
+                bed_file = groups_ld_prune.ld_pruned_fileset.bed,
+                bim_file = groups_ld_prune.ld_pruned_fileset.bim,
+                fam_file = groups_ld_prune.ld_pruned_fileset.fam,
+                loco_pca = loco_pca,
+                npcs = npcs,
+                approx_pca = approx_pca
         }
 
         # Merge covariates and PCs
@@ -127,14 +116,15 @@ workflow gwas {
                 docker_image = docker_image,
                 group_name = group_name,
                 covariates_file = make_groups_and_covariates.updated_covariates,
-                pcs_files = loco_pca.eigenvec,
+                pcs_files = compute_pcs.eigenvec,
                 julia_cmd = get_julia_cmd.julia_cmd 
         }
 
         # First run regenie step 1 using plink genotypes
-        call regenie_step_1 {
+        call gwas_step_1.gwas_step_1 as run_gwas_step_1 {
             input:
                 docker_image = docker_image,
+                gwas_software = gwas_software,
                 group_name = group_name,
                 bed_file = make_group_bed_qced.plink_fileset.bed,
                 bim_file = make_group_bed_qced.plink_fileset.bim,
@@ -151,22 +141,21 @@ workflow gwas {
         # Second run regenie step 2 across imputed chromosomes filesets
         scatter (imputed_chr_fileset in imputed_genotypes) {
             # Perform Regenie Step 2
-            call regenie_step_2 {
+            call gwas_step_2.gwas_step_2 as run_gwas_step_2 {
                 input:
                     docker_image = docker_image,
+                    gwas_software = gwas_software,
                     group_name = group_name,
-                    chr = imputed_chr_fileset.chr,
-                    pgen_file = imputed_chr_fileset.pgen,
-                    pvar_file = imputed_chr_fileset.pvar,
-                    psam_file = imputed_chr_fileset.psam,
+                    imputed_chr_fileset = imputed_chr_fileset,
                     sample_list = sample_list,
                     covariates_file = merge_covariates_and_pcs.covariates_and_pcs,
-                    regenie_loco = regenie_step_1.step1_files.phenotypes_loco,
-                    regenie_list = regenie_step_1.step1_files.list,
                     covariates_list = make_groups_and_covariates.covariates_list,
+                    regenie_loco_preds = run_gwas_step_1.regenie_loco_preds,
+                    regenie_list = run_gwas_step_1.regenie_list,
+                    regenie_bsize = regenie_bsize,
+                    mac = mac,
                     npcs = npcs,
-                    bsize = regenie_bsize,
-                    mac = mac
+                    loco_pca = loco_pca
             }
 
             # Finemap results for the chromosome
@@ -174,7 +163,7 @@ workflow gwas {
                 input:
                     docker_image = docker_image,
                     julia_cmd = get_julia_cmd.julia_cmd,
-                    gwas_results = regenie_step_2.regenie_step2,
+                    gwas_results = run_gwas_step_2.gwas_output,
                     pgen_file = imputed_chr_fileset.pgen,
                     pvar_file = imputed_chr_fileset.pvar,
                     psam_file = imputed_chr_fileset.psam,
@@ -199,7 +188,7 @@ workflow gwas {
                 docker_image = docker_image,
                 output_prefix = group_name + ".gwas",
                 julia_cmd = get_julia_cmd.julia_cmd,
-                results_files = regenie_step_2.regenie_step2,
+                results_files = select_all(run_gwas_step_2.gwas_output)
         }
 
         # Merge Finemapping results across chromosomes
@@ -511,7 +500,7 @@ task finemapping {
     input {
         String docker_image
         String julia_cmd
-        File gwas_results
+        File? gwas_results
         File pgen_file
         File pvar_file
         File psam_file
@@ -565,173 +554,12 @@ task finemapping {
     }
 }
 
-task regenie_step_2 {
-    input {
-        String docker_image
-        String group_name
-        String chr
-        File pgen_file
-        File pvar_file
-        File psam_file
-        File sample_list
-        File covariates_file
-        Array[File] regenie_loco
-        File regenie_list
-        Array[String] covariates_list
-        String npcs = "10"
-        String bsize = "1000"
-        String mac = "10"
-    }
-
-    command <<<
-
-        for file in  ~{sep=" " regenie_loco}; do
-            ln -s "$file" .
-        done
-
-        input_prefix=$(dirname "~{pgen_file}")/$(basename "~{pgen_file}" .pgen)
-
-        # Only retain bi-allelic (REGENIE can't handle non-biallelic)
-        plink2 \
-            --pfile ${input_prefix} \
-            --keep ~{sample_list} \
-            --max-alleles 2 \
-            --min-alleles 2 \
-            --rm-dup exclude-all list \
-            --make-pgen \
-            --out ${input_prefix}.biallelic_frequent
-            
-        # Make covariates list
-        pc_list=$(printf "CHR~{chr}_OUT_PC%s," {1..~{npcs}} | sed 's/,$//')
-        full_covariates_list="~{sep="," covariates_list},${pc_list}"
-
-        # phenotype from group_name
-        phenotype=$(echo ~{group_name} | cut -d'.' -f2)
-        echo $phenotype > phenotype.txt
-
-        # Find the type of the phenotype (quantitative or binary)
-        phenotype_col_idx=$(head -1 ~{covariates_file} | tr '\t' '\n' | grep -n ${phenotype} | cut -d: -f1)
-        uniq_vals_count=$(cut -f"${phenotype_col_idx}" ~{covariates_file} | sort -u | grep -v "NA" | wc -l)
-        trait_type="--bt"
-        if [ "${uniq_vals_count}" -gt 3 ]; then # two binary values + header
-            trait_type="--qt"
-        fi
-
-        conda run -n regenie_env regenie \
-            --step 2 \
-            --pgen ${input_prefix}.biallelic_frequent \
-            --keep ~{sample_list} \
-            --phenoFile ~{covariates_file} \
-            --phenoColList ${phenotype} \
-            --write-samples \
-            --covarFile ~{covariates_file} \
-            --covarColList ${full_covariates_list} \
-            ${trait_type} \
-            --firth --approx --pThresh 0.01 \
-            --minMAC ~{mac} \
-            --pred ~{regenie_list} \
-            --bsize ~{bsize} \
-            --out ~{group_name}.chr~{chr}
-    >>>
-
-    output {
-        File regenie_step2 = "${group_name}.chr${chr}_" + read_string("phenotype.txt") + ".regenie"
-    }
-
-    runtime {
-        docker: docker_image
-        dx_instance_type: "mem2_ssd1_v2_x16"
-    }
-}
-
-
-task regenie_step_1 {
-    input {
-        String docker_image
-        String group_name
-        File bed_file
-        File bim_file
-        File fam_file
-        File sample_list
-        File covariates_file
-        Array[String] covariates_list
-        String cv_folds = "5"
-        String bsize = "1000"
-        String maf = "0.01"
-        String mac = "10"
-    }
-
-    # String group_name = sub(basename(sample_list, ".txt"), "gwas.individuals.", "")
-
-    command <<<
-        genotypes_prefix=$(dirname "~{bed_file}")/$(basename "~{bed_file}" .bed)
-
-        # In principle this is already taken care of in `make_group_bed_qced`, but we ensure here that the input is correct because it is cheap.
-        # Only retain bi-allelic (REGENIE can't handle non-biallelic) and frequent variants within the sample list
-        plink2 \
-            --bfile ${genotypes_prefix} \
-            --keep ~{sample_list} \
-            --mac ~{mac} \
-            --maf ~{maf} \
-            --min-alleles 2 \
-            --max-alleles 2 \
-            --write-snplist \
-            --out biallelic_frequent
-
-        # Parse cross-validation option
-        cv_option="--cv ~{cv_folds}"
-        if [[ ~{cv_folds} == "loocv" ]]; then
-            cv_option="--loocv"
-        fi
-
-        # phenotype from group_name
-        phenotype=$(echo ~{group_name} | cut -d'.' -f2)
-
-        # Find the type of the phenotype (quantitative or binary)
-        phenotype_col_idx=$(head -1 ~{covariates_file} | tr '\t' '\n' | grep -n ${phenotype} | cut -d: -f1)
-        uniq_vals_count=$(cut -f"${phenotype_col_idx}" ~{covariates_file} | sort -u | grep -v "NA" | wc -l)
-        trait_type="--bt"
-        if [ "${uniq_vals_count}" -gt 3 ]; then # two binary values + header
-            trait_type="--qt"
-        fi
-
-        conda run -n regenie_env regenie \
-            --step 1 \
-            --bed ${genotypes_prefix} \
-            --keep ~{sample_list} \
-            --extract biallelic_frequent.snplist \
-            --phenoFile ~{covariates_file} \
-            --phenoColList ${phenotype} \
-            --covarFile ~{covariates_file} \
-            --covarColList ~{sep="," covariates_list} \
-            --minMAC ~{mac} \
-            ${cv_option} \
-            ${trait_type} \
-            --bsize ~{bsize} \
-            --lowmem \
-            --out ~{group_name}.step1
-        awk '{sub(".*/", "", $2); print $1, $2}' ~{group_name}.step1_pred.list > ~{group_name}.step1_pred.listrelative
-    >>>
-
-    output {
-        RegenieStep1Files step1_files = object {
-            phenotypes_loco: glob("${group_name}.step1_*.loco"),
-            list: "${group_name}.step1_pred.listrelative"
-        }
-    }
-
-    runtime {
-        docker: docker_image
-        dx_instance_type: "mem2_ssd1_v2_x16"
-    }
-}
-
 task merge_covariates_and_pcs {
     input {
         String docker_image
         String group_name
         File covariates_file
-        Array[File] pcs_files
+        Array[File]? pcs_files
         String julia_cmd
     }
 
@@ -751,45 +579,6 @@ task merge_covariates_and_pcs {
 
     output {
         File covariates_and_pcs = "${outfile}"
-    }
-
-    runtime {
-        docker: docker_image
-        dx_instance_type: "mem2_ssd1_v2_x16"
-    }
-}
-
-task loco_pca {
-    input {
-        String docker_image
-        String chr
-        File bed_file
-        File bim_file
-        File fam_file
-        String npcs = 10
-        String approx = "true"
-    }
-
-    String output_prefix = "pca." + basename(bed_file, ".ldpruned.bed") + ".chr~{chr}_out"
-
-    command <<<
-        genotypes_prefix=$(dirname "~{bed_file}")/$(basename "~{bed_file}" .bed)
-
-        approx_option=""
-        if [[ "~{approx}" == "true" ]]; then
-            approx_option=" approx"
-        fi
-
-        plink2 \
-            --bfile ${genotypes_prefix} \
-            --not-chr ~{chr} \
-            --pca ~{npcs}${approx_option} \
-            --out ~{output_prefix}
-    >>>
-
-    output {
-        File eigenvec = "${output_prefix}.eigenvec"
-        File eigenval = "${output_prefix}.eigenval"
     }
 
     runtime {
