@@ -24,6 +24,31 @@ RUN rm /var/lib/dpkg/info/libc-bin.* \
         r-base \
         r-base-dev
 
+# Install SAIGE
+## I checkout a specific commit for a reproducible state: it is inspired from: https://github.com/saigegit/SAIGE/blob/main/docker/Dockerfile
+
+RUN cd / \
+    && git clone https://github.com/saigegit/SAIGE \
+    && mv SAIGE app && cd app \
+    && git checkout 3add05fc3f80309f8e4fab980e9a410f87cacc8f \
+    && curl -fsSL https://pixi.sh/install.sh | sh \
+    && mv /root/.pixi/bin/pixi /bin && pixi install \
+    && rm -rf /root/.cache \
+    && pixi run Rscript -e 'install.packages("lintools", repos="https://cloud.r-project.org")' \
+    && curl -L https://github.com/chrchang/plink-ng/archive/refs/tags/v2.0.0-a.6.16.tar.gz | tar -zx \
+    && mv plink-ng-2.0.0-a.6.16 plink-ng \
+    && pixi run x86_64-conda-linux-gnu-cc -std=c++14 -fPIC -O3 -I.pixi/envs/default/include -L.pixi/envs/default/lib -o plink2_includes.a plink-ng/2.0/include/*.cc -shared -lz -lzstd -lpthread -lm -ldeflate \
+    && mv plink2_includes.a .pixi/envs/default/lib \
+    && pixi add --platform linux-64 tbb=2020.1 \
+    && pixi run R CMD INSTALL . \
+    && mv extdata/step1_fitNULLGLMM.R extdata/step2_SPAtests.R extdata/step3_LDmat.R extdata/createSparseGRM.R /usr/local/bin/ \
+    && chmod a+x /usr/local/bin/step1_fitNULLGLMM.R /usr/local/bin/step2_SPAtests.R /usr/local/bin/step3_LDmat.R /usr/local/bin/createSparseGRM.R \
+    && createSparseGRM.R --help \
+    && step1_fitNULLGLMM.R --help \
+    && step2_SPAtests.R --help \
+    && step3_LDmat.R --help
+
+
 # Install BCFTOOLS
 
 RUN wget https://github.com/samtools/bcftools/releases/download/1.22/bcftools-1.22.tar.bz2 \
