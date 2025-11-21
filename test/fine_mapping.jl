@@ -101,7 +101,7 @@ end
         clump_kb = 100,
         clump_id_field = "ID",
         clump_pval_field = "LOG10P",
-        allele_1_field = "ALLELE1"
+        allele_1_field = "ALLELE_1"
     )
     @test nrow(sig_clumps) == 0
     @test names(sig_clumps) == [
@@ -119,7 +119,7 @@ end
         clump_kb = 300_000,
         clump_id_field = "ID",
         clump_pval_field = "LOG10P",
-        allele_1_field = "ALLELE1"
+        allele_1_field = "ALLELE_1"
     )
     @test nrow(sig_clumps) == 1
     sig_clump = first(sig_clumps)
@@ -140,7 +140,7 @@ end
         clump_kb = 70_000,
         clump_id_field = "ID",
         clump_pval_field = "LOG10P",
-        allele_1_field = "ALLELE1"
+        allele_1_field = "ALLELE_1"
     )
     @test nrow(sig_clumps) == 2
 end
@@ -200,9 +200,9 @@ end
     gwas_results = DataFrame(
         CHROM = ["1", "1", "1", "1", "1", "1"],
         ID = ["chr1:183905563:G:A", "chr1:18100537:G:A", "chr1:22542609:T:C", "chr1:40310265:G:A", "chr1:92682820:C:T", "chr1:111622622:C:A"],
-        GENPOS = [183905563, 18100537, 22542609, 40310265, 92682820, 111622622],
-        ALLELE0 = ["G", "G", "T", "G", "C", "C"],
-        ALLELE1 = ["A", "A", "C", "A", "T", "A"],
+        POS = [183905563, 18100537, 22542609, 40310265, 92682820, 111622622],
+        ALLELE_0 = ["G", "G", "T", "G", "C", "C"],
+        ALLELE_1 = ["A", "A", "C", "A", "T", "A"],
         BETA = randn(6),
         SE = rand(6),
     )

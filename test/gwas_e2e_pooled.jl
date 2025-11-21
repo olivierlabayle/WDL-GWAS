@@ -1,6 +1,7 @@
 module TestGWASE2E2
 
 # This end to end test runs with the following conditions:
+# - GWAS sofware: saige
 # - a pooled analysis
 # - A filter on: SUPERPOPULATION=EUR and AGE>50
 # - a continuous phenotype: AGE
@@ -44,7 +45,8 @@ gwas_results = CSV.read(
 @test Set(gwas_results.CHROM) == Set([1, 2, 3])
 @test nrow(gwas_results) > 5
 @test maximum(gwas_results.N) < 400 # Filter applied
-
+## SAIGE colnames
+@test names(gwas_results) == ["CHROM", "POS", "ID", "ALLELE_0", "ALLELE_1", "ALLELE_1_FREQ", "BETA", "SE", "LOG10P", "N", "ALLELE_1_COUNT", "MISSING_RATE", "T_STAT", "VAR"]
 # No Finemapping results (only headers)
 @test countlines(joinpath(results_dir, "call-merge_fp_group_chr_results", "shard-0", "execution", "all.AGE.finemapping.tsv")) == 1
 

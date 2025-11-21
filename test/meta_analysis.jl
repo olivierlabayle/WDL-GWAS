@@ -47,19 +47,19 @@ end
     PopGen.append_GWAS_info_to_meta_analysis_results!(metal_results, phenotype_gwas_files)
     @test nrow(metal_results) == 19
     @test names(metal_results) == [
-        "ID", "CHROM", "GENPOS", "ALLELE0", "ALLELE1", "A1FREQ", "N", "NGROUPS"
+        "ID", "CHROM", "POS", "ALLELE_0", "ALLELE_1", "ALLELE_1_FREQ", "N", "NGROUPS"
     ]
     # "chr1:14012312:T:C" is not in the EUR file
     @test metal_results[metal_results.ID .== "chr1:14012312:T:C", :NGROUPS] == [2]
     
     for gwas_file in phenotype_gwas_files
-        gwas_results = CSV.read(gwas_file, DataFrame; delim="\t", select=[:ID, :CHROM, :GENPOS, :ALLELE0, :ALLELE1, :A1FREQ, :N])
+        gwas_results = CSV.read(gwas_file, DataFrame; delim="\t", select=[:ID, :CHROM, :POS, :ALLELE_0, :ALLELE_1, :ALLELE_1_FREQ, :N])
         joined = leftjoin(
-            select(metal_results, :ID, :A1FREQ => :MINA1FREQ, :N => :SUM_N), 
-            select(gwas_results, :ID, :A1FREQ => :GROUP_A1FREQ, :N => :GROUP_N), 
+            select(metal_results, :ID, :ALLELE_1_FREQ => :MIN_ALLELE_1_FREQ, :N => :SUM_N), 
+            select(gwas_results, :ID, :ALLELE_1_FREQ => :GROUP_ALLELE_1_FREQ, :N => :GROUP_N), 
             on=:ID
         )
-        @test all(skipmissing(joined.MINA1FREQ .<= joined.GROUP_A1FREQ))
+        @test all(skipmissing(joined.MIN_ALLELE_1_FREQ .<= joined.GROUP_ALLELE_1_FREQ))
         @test all(skipmissing(joined.SUM_N .>= joined.GROUP_N))
     end
 end
@@ -84,8 +84,8 @@ end
     expected_cols = Set([
         "ID", "BETA", "SE", "LOG10P", "DIRECTION", 
         "HET_ISQ", "HET_CHISQ", "HET_DF", "LOG10P_HET", 
-        "CHROM", "GENPOS", "ALLELE0", "ALLELE1", 
-        "A1FREQ", "N", "NGROUPS"
+        "CHROM", "POS", "ALLELE_0", "ALLELE_1", 
+        "ALLELE_1_FREQ", "N", "NGROUPS"
     ])
     meta_covid_19 = CSV.read(joinpath(tmpdir, "gwas.meta_analysis.SEVERE_COVID_19.gwas.tsv"), DataFrame)
     @test Set(names(meta_covid_19)) == expected_cols

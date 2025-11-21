@@ -95,7 +95,9 @@ function write_covariates_and_phenotypes_group(data, covariates_list;
 
         CSV.write(
             string(output_prefix, ".individuals.", group_id, ".", phenotype, ".txt"), 
-            DataFrames.select(data_no_missing, ["FID", "IID"]), header=false, delim="\t"
+            DataFrames.select(data_no_missing, ["FID", "IID"]), 
+            header=false, 
+            delim="\t"
         )
         n_phenotypes_passed += 1
     end

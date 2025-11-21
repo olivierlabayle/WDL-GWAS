@@ -5,8 +5,8 @@ const FINEMAPPING_RESULT_COLS = [
 function tag_variant_id_missing_from_gwas!(pvar, gwas_results)
     # Map GWAS variants to their alleles
     gwas_ids_to_alleles = Dict(
-        row.ID => Set([row.ALLELE0, row.ALLELE1]) 
-        for row in Tables.namedtupleiterator(DataFrames.select(gwas_results, [:ID, :ALLELE0, :ALLELE1]))
+        row.ID => Set([row.ALLELE_0, row.ALLELE_1]) 
+        for row in Tables.namedtupleiterator(DataFrames.select(gwas_results, [:ID, :ALLELE_0, :ALLELE_1]))
     )
     # Update variants IDs in PVAR if they are not in the GWAS variants
     pvar.ID = map(Tables.namedtupleiterator(pvar)) do row
@@ -123,7 +123,8 @@ function load_phenotypes_matching_samples(covariates_file, sample_file, phenotyp
     sample_list = read_samples(sample_file)
     covariates = CSV.read(covariates_file, DataFrame; 
         delim='\t', 
-        select=["FID", "IID", phenotype]
+        select=["FID", "IID", phenotype],
+        missingstring="NA"
     )
     return innerjoin(covariates, sample_list, on=[:FID, :IID])
 end
@@ -249,7 +250,7 @@ function susie_rss_finemap(R, variants_info, y; n_causal=10, max_iter=1000)
 end
 
 function initialize_variants_info_rss(pgen_prefix, variants, gwas_results)
-    pvar = read_pvar(string(pgen_prefix, ".pvar"))
+    pvar = DataFrames.select(read_pvar(string(pgen_prefix, ".pvar")), :ID, :REF, :ALT)
     variants_info = leftjoin!(
         leftjoin!(
             DataFrame(ID=variants),
@@ -423,7 +424,7 @@ function finemap_significant_regions(
     )
     # Read GWAS results, PVAR files and samples ids
     @info "Reading GWAS results and PVAR files"
-    gwas_results = CSV.read(gwas_results_file, DataFrame)
+    gwas_results = CSV.read(gwas_results_file, DataFrame; delim="\t", missingstring="NA")
     pvar = read_pvar(pgen_prefix * ".pvar")
     sample_file = make_clean_sample_file(sample_file; 
         exclude=split(exclude_string, ","), 
@@ -479,7 +480,7 @@ function finemap_significant_regions(
     end
     output_file = string(output_prefix, ".tsv")
     output_df = length(finemapping_results) > 0 ? vcat(finemapping_results...) : DataFrame([col => [] for col in FINEMAPPING_RESULT_COLS])
-    CSV.write(output_file, output_df, delim="\t")
+    CSV.write(output_file, output_df, delim="\t", missingstring="NA")
 
     return 0
 end

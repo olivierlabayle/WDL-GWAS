@@ -1,7 +1,11 @@
 function merge_chr_results(merge_list_file; output_prefix = "results.all_chr")
     merge_list = readlines(merge_list_file)
-    results = mapreduce(f -> CSV.read(f, DataFrame), vcat, merge_list)
-    CSV.write(string(output_prefix, ".tsv"), results; delim="\t", header=true)
+    results = mapreduce(f -> CSV.read(f, DataFrame; missingstring="NA"), vcat, merge_list)
+    CSV.write(string(output_prefix, ".tsv"), results; 
+        delim="\t", 
+        header=true,
+        missingstring="NA"
+    )
     return 0
 end
 

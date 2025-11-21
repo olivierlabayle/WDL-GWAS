@@ -34,6 +34,27 @@ function cli_settings()
         "merge-chr-results"
             action = :command
             help = "Merges REGENIE results from different chromosomes."
+        
+        "harmonize-gwas-results"
+            action = :command
+            help = "Harmonizes GWAS results"
+    end
+
+    @add_arg_table! s["harmonize-gwas-results"] begin
+        "gwas-results"
+            arg_type = String
+            required = true
+            help = "Path to summary statistics."
+    
+        "--source-software"
+            arg_type = String
+            default = "saige"
+            help = "SOftware that generated the gwas results."
+
+        "--output"
+            arg_type = String
+            help = "Output filename"
+            default = "harmonized_results.tsv"
     end
 
     @add_arg_table! s["meta-analyse"] begin
@@ -266,6 +287,12 @@ function julia_main()::Cint
             output_prefix=cmd_settings["output-prefix"],
             exclude_string=cmd_settings["exclude"],
             method=cmd_settings["method"],
+        )
+    elseif cmd == "harmonize-gwas-results"
+        harmonize_gwas_results(
+            cmd_settings["gwas-results"];
+            source_software=cmd_settings["source-software"],
+            output=cmd_settings["output"]
         )
     else
         throw(ArgumentError(string("Unknown command: ", cmd)))

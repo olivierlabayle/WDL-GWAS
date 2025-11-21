@@ -98,11 +98,11 @@ end
         # Create dummy Regenie Step 2 results files
         gwas_results = DataFrame(
             CHROM = [chr],
-            GENPOS = [1000],
+            POS = [1000],
             ID = ["chr$(chr):4132:G:A"],
-            ALLELE0 = ["A"],
-            ALLELE1 = ["T"],
-            A1FREQ = [.5],
+            ALLELE_0 = ["A"],
+            ALLELE_1 = ["T"],
+            ALLELE_1_FREQ = [.5],
             N = [100],
             TEST = ["ADD"],
             BETA = [0.01],
@@ -130,8 +130,8 @@ end
     julia_main()
     gwas_results = CSV.read(output_prefix * ".tsv", DataFrame; delim="\t")
     expected_cols = [
-        "CHROM", "GENPOS", "ID", "ALLELE0", "ALLELE1", 
-        "A1FREQ", "N", "TEST", "BETA", "SE", 
+        "CHROM", "POS", "ID", "ALLELE_0", "ALLELE_1", 
+        "ALLELE_1_FREQ", "N", "TEST", "BETA", "SE", 
         "CHISQ", "LOG10P", "EXTRA"
     ]
     @test nrow(gwas_results) == 2

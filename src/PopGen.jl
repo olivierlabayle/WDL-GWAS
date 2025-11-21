@@ -25,6 +25,7 @@ include("plotting.jl")
 include("meta_analysis.jl")
 include("fine_mapping.jl")
 include("utils.jl")
+include("harmonize_gwas_results.jl")
 
 export julia_main
 

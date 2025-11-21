@@ -12,17 +12,17 @@ parse_a1freq(freq::AbstractString) = freq == "NA" ? NaN : parse(Float64, freq)
 
 parse_a1freq(freq::Real) = freq
 
-function harmonize_gwas_results(gwas_results)
+function genetics_makie_gwas_harmonize(gwas_results)
     return DataFrames.transform(gwas_results, 
         :CHROM => (x -> string.(x)) => :CHR,
-        :GENPOS => :BP,
+        :POS => :BP,
         :ID => :SNP,
         :LOG10P => (x -> parse_pvalue.(x))  => :P,
-        :A1FREQ => (x -> parse_a1freq.(x)) => :A1FREQ
+        :ALLELE_1_FREQ => (x -> parse_a1freq.(x)) => :ALLELE_1_FREQ
     )    
 end
 
-function harmonize_finemapping_results(finemapping_results)
+function genetics_makie_fp_harmonize(finemapping_results)
     return DataFrames.transform(finemapping_results, 
         :CHROM => (x -> string.(x)) => :CHR,
         :POS => :BP,
@@ -175,9 +175,9 @@ end
 
 function make_plots(gwas_file, finemapping_file; maf=0.01, output_prefix = "gwas.plot")
     group, phenotype, _ = split(basename(gwas_file), ".")
-    gwas_results = harmonize_gwas_results(CSV.read(gwas_file, DataFrame, delim="\t"))
+    gwas_results = genetics_makie_gwas_harmonize(CSV.read(gwas_file, DataFrame, delim="\t", missingstring="NA"))
     maf_filtered_gwas_results = filter(
-        x -> x.A1FREQ > maf, 
+        x -> x.ALLELE_1_FREQ > maf, 
         gwas_results
     )
     # Plot Manhattan
@@ -188,7 +188,7 @@ function make_plots(gwas_file, finemapping_file; maf=0.01, output_prefix = "gwas
     fig = qqplot(maf_filtered_gwas_results; title=title)
     save(string(output_prefix, ".qq.png"), fig)
     # Plot locuszoom for top hits
-    finemapping_results = harmonize_finemapping_results(CSV.read(finemapping_file, DataFrame, delim="\t"))
+    finemapping_results = genetics_makie_fp_harmonize(CSV.read(finemapping_file, DataFrame, delim="\t", missingstring="NA"))
     for (locus_key, locus_group) in pairs(groupby(finemapping_results, :LOCUS_ID))
         region_data = innerjoin(
             gwas_results,

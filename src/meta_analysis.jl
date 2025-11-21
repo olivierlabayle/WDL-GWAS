@@ -12,9 +12,10 @@ function run_metal_across_phenotypes!(regenie_files; output_prefix="gwas.meta_an
         metal_script = """
         # === DESCRIBE THE COLUMNS IN THE INPUT FILES ===
         MARKER ID 
+        GENOMICCONTROL ON
         WEIGHT N 
-        ALLELE ALLELE1 ALLELE0 
-        FREQ A1FREQ 
+        ALLELE ALLELE_1 ALLELE_0 
+        FREQ ALLELE_1_FREQ 
         EFFECT BETA 
         STDERR SE 
         PVAL P_VAL
@@ -24,9 +25,17 @@ function run_metal_across_phenotypes!(regenie_files; output_prefix="gwas.meta_an
         """
         for (group_file, group_basename) in zip(group.FILE, group.BASENAME)
             # Add P_VAL column expected by METAL
-            group_gwas_results = CSV.read(group_file, DataFrame; delim="\t")
+            group_gwas_results = CSV.read(group_file, DataFrame; 
+                delim="\t", 
+                missingstring="NA",
+                select=[:ID, :ALLELE_0, :ALLELE_1, :ALLELE_1_FREQ, :BETA, :LOG10P, :SE, :N]
+            )
             transform!(group_gwas_results, :LOG10P => (x -> parse_pvalue.(x))  => :P_VAL)
-            CSV.write(joinpath(tmp_dir, group_basename), group_gwas_results; delim="\t", header=true)
+            CSV.write(joinpath(tmp_dir, group_basename), group_gwas_results; 
+                delim="\t", 
+                header=true, 
+                missingstring="NA"
+            )
             # Add PROCESS command
             metal_script *= "PROCESS " * joinpath(tmp_dir, group_basename) * "\n"
         end
@@ -58,29 +67,33 @@ function post_process_metal_output(regenie_files; output_prefix="gwas.meta_analy
             "logHetP" => "LOG10P_HET"
         )
         append_GWAS_info_to_meta_analysis_results!(metal_results, group.FILE)
-        CSV.write(string(output_prefix, ".", phenotype_key.PHENOTYPE, ".gwas.tsv"), metal_results; delim="\t", header=true)
+        CSV.write(string(output_prefix, ".", phenotype_key.PHENOTYPE, ".gwas.tsv"), metal_results; 
+            delim="\t", 
+            header=true,
+            missingstring="NA"
+            )
     end
 end
 
 function append_GWAS_info_to_meta_analysis_results!(metal_results, phenotype_gwas_files)
-    # Get variant info from GWAS results: CHROM, GENPOS, ALLELE0, ALLELE1, A1FREQ, N, NGROUPS
+    # Get variant info from GWAS results: CHROM, POS, ALLELE_0, ALLELE_1, ALLELE_1_FREQ, N, NGROUPS
     variants_info_dict = Dict{String, Vector{Any}}()
     for phenotype_gwas_file in phenotype_gwas_files
-        phenotype_gwas_results = CSV.read(phenotype_gwas_file, DataFrame; delim="\t")
-        for row in Tables.namedtupleiterator(phenotype_gwas_results[!, [:CHROM, :GENPOS, :ID, :ALLELE0, :ALLELE1, :A1FREQ, :N]])
+        phenotype_gwas_results = CSV.read(phenotype_gwas_file, DataFrame; delim="\t", missingstring="NA")
+        for row in Tables.namedtupleiterator(phenotype_gwas_results[!, [:CHROM, :POS, :ID, :ALLELE_0, :ALLELE_1, :ALLELE_1_FREQ, :N]])
             if haskey(variants_info_dict, row.ID)
                 variant_info = variants_info_dict[row.ID]
                 variant_info[end] += 1 # update count of groups the variant was observed in
                 variant_info[end-1] += row.N # update total N
-                variant_info[end-2] = min(variant_info[end-2], row.A1FREQ) # update min A1FREQ
+                variant_info[end-2] = min(variant_info[end-2], row.ALLELE_1_FREQ) # update min ALLELE_1_FREQ
             else
-                variants_info_dict[row.ID] = [row.CHROM, row.GENPOS, row.ALLELE0, row.ALLELE1, row.A1FREQ, row.N, 1]
+                variants_info_dict[row.ID] = [row.CHROM, row.POS, row.ALLELE_0, row.ALLELE_1, row.ALLELE_1_FREQ, row.N, 1]
             end
         end
     end
     # Update metal results with variant info
     transform!(metal_results, 
-        :ID => ByRow(id -> variants_info_dict[id]) => [:CHROM, :GENPOS, :ALLELE0, :ALLELE1, :A1FREQ, :N, :NGROUPS]
+        :ID => ByRow(id -> variants_info_dict[id]) => [:CHROM, :POS, :ALLELE_0, :ALLELE_1, :ALLELE_1_FREQ, :N, :NGROUPS]
     )
 
     return metal_results

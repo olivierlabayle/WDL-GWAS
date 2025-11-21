@@ -144,6 +144,7 @@ workflow gwas {
             call gwas_step_2.gwas_step_2 as run_gwas_step_2 {
                 input:
                     docker_image = docker_image,
+                    julia_cmd = get_julia_cmd.julia_cmd,
                     gwas_software = gwas_software,
                     group_name = group_name,
                     imputed_chr_fileset = imputed_chr_fileset,
@@ -152,6 +153,8 @@ workflow gwas {
                     covariates_list = make_groups_and_covariates.covariates_list,
                     regenie_loco_preds = run_gwas_step_1.regenie_loco_preds,
                     regenie_list = run_gwas_step_1.regenie_list,
+                    saige_model_file = run_gwas_step_1.saige_model_file,
+                    saige_variance_ratio_file = run_gwas_step_1.saige_variance_ratio_file,
                     regenie_bsize = regenie_bsize,
                     mac = mac,
                     npcs = npcs,

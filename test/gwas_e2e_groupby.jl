@@ -1,6 +1,7 @@
 module TestGWASE2E2
 
 # This end to end test runs with the following conditions:
+# - GWAS sofware: regenie
 # - a grouped analysis defined by the SUPERPOPULATION column
 # - two binary phenotypes: SEVERE_COVID_19 and SEVERE_PNEUMONIA
 # - finemapping thresholds have been lowered to be effectively performed
@@ -111,19 +112,15 @@ end
 
 # Test LOCO PCA
 scatter_dirs = filter(x -> occursin("call-Scatter", x), readdir(results_dir, join=true))
-loco_pca_dir = findfirst(
-    dir_name ->  dir_contains_subdir(dir_name, "call-loco_pca"),
-    scatter_dirs
-)
-loco_pca_dir = scatter_dirs[loco_pca_dir]
+loco_pca_dir = joinpath(results_dir, "call-compute_pcs")
 ## One PCA per (group, chromosome) pair = 5 * 3 = 15
 ## These are ordered by group and chromosome
 pca_groups_and_chrs = Set([])
 for group_shard in [0, 1, 2, 3, 4, 5]
-    subdir = only(readdir(joinpath(loco_pca_dir, "shard-$group_shard"), join=true))
-    subdir = joinpath(only(readdir(subdir, join=true)), "call-loco_pca")
+    group_subdir = only(readdir(joinpath(loco_pca_dir, "shard-$group_shard"), join=true))
+    group_subdir = joinpath(only(readdir(group_subdir, join=true)), "call-pca_loco")
     for chr_shard in [0, 1, 2]
-        execution_dir = joinpath(subdir, "shard-$chr_shard", "execution")
+        execution_dir = joinpath(group_subdir, "shard-$chr_shard", "execution")
         files = readdir(execution_dir)
         eigenvec_file = files[findfirst(endswith("eigenvec"), files)]
         _, ancestry, phenotype, chr, _ = split(eigenvec_file, ".")
@@ -154,10 +151,11 @@ end
 @test merged_covariates_groups == expected_groups
 
 # Test REGENIE Step 1
-regenie_step_1_dir = joinpath(results_dir, "call-regenie_step_1")
+gwas_step_1_dir = joinpath(results_dir, "call-run_gwas_step_1")
 regenie_groups = Set([])
 for group_shard in 0:5
-    execution_dir = joinpath(regenie_step_1_dir, "shard-$group_shard", "execution")
+    group_subdir = only(readdir(joinpath(gwas_step_1_dir, "shard-$group_shard", "gwas_step_1"), join=true))
+    execution_dir = joinpath(group_subdir, "call-regenie_step_1", "execution")
     files = readdir(execution_dir)
     pred_list = files[findfirst(endswith(".step1_pred.listrelative"), files)]
     ancestry, phenotype, _ = split(pred_list, ".")
@@ -167,22 +165,23 @@ end
 
 # Test REGENIE Step 2 / finemapping
 top_regenie_step_2_dir = findfirst(
-    dir_name ->  dir_contains_subdir(dir_name, "call-regenie_step_2"),
+    dir_name ->  dir_contains_subdir(dir_name, "call-run_gwas_step_2"),
     scatter_dirs
 )
 top_regenie_step_2_dir = scatter_dirs[top_regenie_step_2_dir]
 regenie_step_2_groups = Set([])
 results_expected_cols = [
-        "CHROM", "GENPOS", "ID", "ALLELE0", "ALLELE1", "A1FREQ", "N", "TEST", "BETA", "SE", "CHISQ", "LOG10P", "EXTRA"
-    ]
+        "CHROM", "POS", "ID", "ALLELE_0", "ALLELE_1", "ALLELE_1_FREQ", "BETA", "SE", "LOG10P", "N", "TEST", "CHISQ", "EXTRA"
+]
 for group_shard in 0:5
     subdir = only(readdir(joinpath(top_regenie_step_2_dir, "shard-$group_shard"), join=true))
     subdir = only(readdir(subdir, join=true))
-    regenie_step_2_dir = joinpath(subdir, "call-regenie_step_2")
+    gwas_step_2_dir = joinpath(subdir, "call-run_gwas_step_2")
     for chr_shard in 0:2
-        execution_dir = joinpath(regenie_step_2_dir, "shard-$chr_shard", "execution")
+        regenie_step_2_dir = only(readdir(joinpath(gwas_step_2_dir, "shard-$chr_shard", "gwas_step_2"), join=true))
+        execution_dir = joinpath(regenie_step_2_dir, "call-regenie_step_2", "execution")
         files = readdir(execution_dir)
-        step_2_results_file = files[findfirst(endswith(".regenie"), files)]
+        step_2_results_file = files[findfirst(endswith(".tsv"), files)]
         ancestry, phenotype, chr_pheno, _ = split(step_2_results_file, ".")
         chr = split(chr_pheno, "_")[1]
         push!(regenie_step_2_groups, ("$ancestry.$phenotype", chr))

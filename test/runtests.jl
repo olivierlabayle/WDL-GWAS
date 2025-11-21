@@ -11,6 +11,7 @@ TESTDIR = joinpath(PKGDIR, "test")
     @test include(joinpath(TESTDIR, "fine_mapping.jl"))
     @test include(joinpath(TESTDIR, "utils.jl"))
     @test include(joinpath(TESTDIR, "prepare_groups.jl"))
+    @test include(joinpath(TESTDIR, "harmonize_gwas_results.jl"))
 
     # End to end Tests of the WDL workflow
     @test include(joinpath(TESTDIR, "gwas_e2e_groupby.jl"))

@@ -18,8 +18,3 @@ struct RegenieStep1Files {
     Array[File] phenotypes_loco
     File list
 }
-
-struct SAIGEStep1Files {
-    File model_file
-    File variance_ratio_file
-}
