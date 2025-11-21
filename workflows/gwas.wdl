@@ -116,7 +116,7 @@ workflow gwas {
                 docker_image = docker_image,
                 group_name = group_name,
                 covariates_file = make_groups_and_covariates.updated_covariates,
-                pcs_files = compute_pcs.eigenvec,
+                pcs_files = select_first([compute_pcs.eigenvec]),
                 julia_cmd = get_julia_cmd.julia_cmd 
         }
 
@@ -151,7 +151,7 @@ workflow gwas {
                     sample_list = sample_list,
                     covariates_file = merge_covariates_and_pcs.covariates_and_pcs,
                     covariates_list = make_groups_and_covariates.covariates_list,
-                    regenie_loco_preds = run_gwas_step_1.regenie_loco_preds,
+                    regenie_loco_preds = select_first([run_gwas_step_1.regenie_loco_preds]),
                     regenie_list = run_gwas_step_1.regenie_list,
                     saige_model_file = run_gwas_step_1.saige_model_file,
                     saige_variance_ratio_file = run_gwas_step_1.saige_variance_ratio_file,
@@ -562,7 +562,7 @@ task merge_covariates_and_pcs {
         String docker_image
         String group_name
         File covariates_file
-        Array[File]? pcs_files
+        Array[File] pcs_files
         String julia_cmd
     }
 

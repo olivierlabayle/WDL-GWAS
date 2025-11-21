@@ -74,7 +74,7 @@ task regenie_step_2 {
         File psam_file
         File sample_list
         File covariates_file
-        Array[File]? regenie_loco
+        Array[File] regenie_loco
         File? regenie_list
         Array[String] covariates_list
         String npcs = "10"
@@ -161,7 +161,7 @@ workflow gwas_step_2 {
         File sample_list
         File covariates_file
         Array[String] covariates_list
-        Array[File]? regenie_loco_preds
+        Array[File] regenie_loco_preds
         File? regenie_list
         File? saige_model_file
         File? saige_variance_ratio_file
