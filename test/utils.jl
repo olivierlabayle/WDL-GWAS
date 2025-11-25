@@ -109,10 +109,10 @@ end
             SE = [0.001],
             CHISQ = [10],
             LOG10P = [1.0],
-            EXTRA = [""]
+            EXTRA = [missing]
         )
         gwas_output_file = joinpath(tmpdir, "$group.chr$(chr).step2_SEVERE_COVID_19.regenie")
-        CSV.write(gwas_output_file, gwas_results)
+        CSV.write(gwas_output_file, gwas_results; missingstring="NA")
         push!(gwas_merge_list, gwas_output_file)
     end
     gwas_merge_list_file = joinpath(tmpdir, "gwas_merge_list.txt")
