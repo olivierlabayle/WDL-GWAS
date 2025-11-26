@@ -27,7 +27,7 @@ workflow gwas {
         # PCA parameters
         String loco_pca = "false"
         # GWAS software
-        String gwas_software = "regenie"
+        String gwas_software = "saige"
         # Regenie parameters
         String regenie_cv_folds = "loocv" # or an integer
         String regenie_bsize = "1000"

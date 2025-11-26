@@ -1,24 +1,10 @@
-function parse_pvalue(log10_pval::AbstractString)
-    if log10_pval == "NA"
-        return NaN
-    else
-        return parse_pvalue(parse(Float64, log10_pval))
-    end
-end
-
-parse_pvalue(log10_pval::Real) = exp10(-log10_pval)
-
-parse_a1freq(freq::AbstractString) = freq == "NA" ? NaN : parse(Float64, freq)
-
-parse_a1freq(freq::Real) = freq
-
 function genetics_makie_gwas_harmonize(gwas_results)
     return DataFrames.transform(gwas_results, 
         :CHROM => (x -> string.(x)) => :CHR,
         :POS => :BP,
         :ID => :SNP,
-        :LOG10P => (x -> parse_pvalue.(x))  => :P,
-        :ALLELE_1_FREQ => (x -> parse_a1freq.(x)) => :ALLELE_1_FREQ
+        :LOG10P => (x -> neg_exp10.(x))  => :P,
+        :ALLELE_1_FREQ
     )    
 end
 
@@ -176,9 +162,9 @@ end
 function make_plots(gwas_file, finemapping_file; maf=0.01, output_prefix = "gwas.plot")
     group, phenotype, _ = split(basename(gwas_file), ".")
     gwas_results = genetics_makie_gwas_harmonize(CSV.read(gwas_file, DataFrame, delim="\t", missingstring="NA"))
-    maf_filtered_gwas_results = filter(
-        x -> x.ALLELE_1_FREQ > maf, 
-        gwas_results
+    maf_filtered_gwas_results = subset(gwas_results,
+        :ALLELE_1_FREQ => x -> x .>= maf,
+        skipmissing=true
     )
     # Plot Manhattan
     title = string(phenotype, "\n", group)

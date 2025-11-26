@@ -1,3 +1,7 @@
+neg_exp10(log10_pval::Real) = exp10(-log10_pval)
+
+neg_exp10(log10_pval::Missing) = missing
+
 function merge_chr_results(merge_list_file; output_prefix = "results.all_chr")
     merge_list = readlines(merge_list_file)
     results = mapreduce(f -> CSV.read(f, DataFrame; missingstring="NA"), vcat, merge_list)

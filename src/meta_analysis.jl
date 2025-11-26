@@ -30,7 +30,7 @@ function run_metal_across_phenotypes!(regenie_files; output_prefix="gwas.meta_an
                 missingstring="NA",
                 select=[:ID, :ALLELE_0, :ALLELE_1, :ALLELE_1_FREQ, :BETA, :LOG10P, :SE, :N]
             )
-            transform!(group_gwas_results, :LOG10P => (x -> parse_pvalue.(x))  => :P_VAL)
+            transform!(group_gwas_results, :LOG10P => (x -> neg_exp10.(x))  => :P_VAL)
             CSV.write(joinpath(tmp_dir, group_basename), group_gwas_results; 
                 delim="\t", 
                 header=true, 
