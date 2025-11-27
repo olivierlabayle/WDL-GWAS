@@ -1,6 +1,7 @@
 {
     "gwas.julia_threads": "1",
     "gwas.regenie_cv_folds": "loocv",
+    "gwas.gwas_software": "regenie",
     "gwas.loco_pca": "true",
     "gwas.meta_exclude": ["AMR"],
     "gwas.julia_use_sysimage": "false",
