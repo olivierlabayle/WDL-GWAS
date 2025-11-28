@@ -43,7 +43,7 @@ end
         COVID_19 = [1, missing, 0, 1, 0, 1, 1, missing, 0, 1],
         AGE = rand(20:80, 10),
     )
-    CSV.write(joinpath(tmpdir, "covariates.csv"), covariates, delim="\t")
+    CSV.write(joinpath(tmpdir, "covariates.csv"), covariates, delim="\t", missingstring="NA")
 
     for ancestry in ["AFR", "AMR", "EAS", "EUR", "SAS"]
         for chr in 1:3
@@ -68,7 +68,7 @@ end
         "--output", joinpath(tmpdir, "merged_covariates_and_pcs.tsv")
     ])
     julia_main()
-    merged_covariates_pcs = CSV.read(joinpath(tmpdir, "merged_covariates_and_pcs.tsv"), DataFrame)
+    merged_covariates_pcs = CSV.read(joinpath(tmpdir, "merged_covariates_and_pcs.tsv"), DataFrame, missingstring="NA")
     # Merge did not add any row
     @test nrow(merged_covariates_pcs) == 10
     # 6 new columns 2 for PCS, 3 for get_chr_out_string
@@ -86,7 +86,7 @@ end
         "CHR3_OUT_PC2"
     ]
     # missings are NA
-    @test sum(merged_covariates_pcs.COVID_19 .== "NA") == 2
+    @test sum(merged_covariates_pcs.COVID_19 .=== missing) == 2
 end
 
 @testset "Test merge_chr_results" begin

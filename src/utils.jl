@@ -26,7 +26,7 @@ function read_loco_pcs(pc_file)
 end
 
 function merge_covariates_and_pcs(covariates_file, pcs_prefix; output="covariates_and_pcs.csv")
-    covariates = CSV.read(covariates_file, DataFrame)
+    covariates = CSV.read(covariates_file, DataFrame, missingstring="NA")
     pcs_dir = dirname(pcs_prefix)
     pcs_dir, pcs_prefix = pcs_dir == "" ? (".", "./$pcs_prefix") : (pcs_dir, pcs_prefix)
     pcs_files = filter(startswith(pcs_prefix), readdir(pcs_dir, join=true))

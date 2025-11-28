@@ -72,7 +72,7 @@ end
     ])
     julia_main()
 
-    updated_covariates = CSV.read(joinpath(tmpdir, "gwas.covariates.csv"), DataFrame)
+    updated_covariates = CSV.read(joinpath(tmpdir, "gwas.covariates.csv"), DataFrame, missingstring="NA")
     # Check covariate file
     expected_covariate_cols = [
         "FID", 
@@ -152,7 +152,7 @@ end
     julia_main()
 
     # Check covariate file and group 
-    covariates = CSV.read(joinpath(tmpdir, "gwas_all.covariates.csv"), DataFrame)
+    covariates = CSV.read(joinpath(tmpdir, "gwas_all.covariates.csv"), DataFrame, missingstring="NA")
     # SEVERE_COVID_19 is dropped because it has fewer than 2500 cases/controls
     @test !isfile(joinpath(tmpdir, "gwas_all.individuals.all.SEVERE_COVID_19.txt"))
     # The group consists in all individuals

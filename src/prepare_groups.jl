@@ -131,7 +131,8 @@ function make_groups_and_covariates(
     # Write new covariates to file
     CSV.write(
         string(output_prefix, ".covariates.csv"), 
-        covariates, 
+        covariates,
+        missingstring="NA",
         delim="\t"
     )
     # Write required covariates list to file for REGENIE
