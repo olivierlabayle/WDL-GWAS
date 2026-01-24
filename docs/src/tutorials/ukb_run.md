@@ -120,6 +120,7 @@ Then you can run it using the following DNA Nexus commands. First we compile it 
 ```
 java -jar $DX_COMPILER_PATH compile workflows/extract_genotypes.wdl \
 -f -project $RAP_PROJECT_ID \
+-extras config/extras.json \
 -reorg \
 -folder /workflows/extract_genotypes \
 -inputs docs/src/assets/extract-ukb-genotypes.inputs.json
@@ -196,6 +197,7 @@ Then, as in the previous step, we need to compile WDL-GWAS and upload it to the 
 ```bash
 java -jar $DX_COMPILER_PATH compile workflows/gwas.wdl \
 -f -project $RAP_PROJECT_ID \
+-extras config/extras.json \
 -reorg \
 -folder /workflows/gwas \
 -inputs docs/src/assets/paper.inputs.json

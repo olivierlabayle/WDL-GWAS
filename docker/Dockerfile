@@ -101,5 +101,3 @@ COPY . /opt/PopGen
 RUN export R_HOME=/usr/lib/R \
     && julia --project=/opt/PopGen --startup-file=no -e 'using Pkg; Pkg.instantiate(); Pkg.precompile()' \
     && julia --project=/opt/PopGen --startup-file=no --threads=auto -e 'using PackageCompiler; create_sysimage(["PopGen"], sysimage_path="/opt/PopGen/sysimage.so", include_transitive_dependencies=false, cpu_target=PackageCompiler.default_app_cpu_target())'
-
-
