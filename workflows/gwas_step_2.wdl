@@ -59,7 +59,7 @@ task saige_step_2 {
 
     runtime {
         docker: docker_image
-        dx_instance_type: "mem2_ssd1_v2_x4"
+        dx_instance_type: "mem2_ssd1_v2_x8"
     }
 }
 

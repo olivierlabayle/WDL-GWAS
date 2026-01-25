@@ -2,7 +2,7 @@
   "defaultTaskDxAttributes" : {
     "runSpec": {
         "access" : {
-          "project": "UPLOAD",
+          "project": "CONTRIBUTE",
           "allProjects": "VIEW",
           "network": ["*"]
         }
