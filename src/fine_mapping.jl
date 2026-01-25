@@ -192,6 +192,16 @@ function get_credible_sets(susie_results, p)
     return cs_vector
 end
 
+function postprocess_finemapping_results!(variants_info, ::Nothing, ld_variants)
+    locus_id = first(ld_variants.ID_A)
+    variants_info.PIP .= missing
+    variants_info.LOCUS_ID .= locus_id
+    variants_info.SUSIE_CONVERGED .= false
+    variants_info.CS .= missing
+    leftjoin!(variants_info, ld_variants[!, [:ID_B, :UNPHASED_R2]], on=:ID => :ID_B)
+    return select!(variants_info, :CHROM, :POS, :ID, :REF, :ALT, :LOCUS_ID, :PIP, :CS, :UNPHASED_R2, :SUSIE_CONVERGED)
+end
+
 function postprocess_finemapping_results!(variants_info, finemapping_results, ld_variants)
     locus_id = first(ld_variants.ID_A)
     variants_info.PIP = finemapping_results[:pip]
@@ -271,7 +281,11 @@ function finemap_locus_rss(locus, gwas_results, pgen_prefix, y;
     lead_to_locus_r2 = compute_lead_to_locus_r2(locus, pgen_prefix)
     R, variants = get_LD_matrix(pgen_prefix, locus)
     variants_info = initialize_variants_info_rss(pgen_prefix, variants, gwas_results)
-    finemapping_results = susie_rss_finemap(R, variants_info, y; n_causal=n_causal, max_iter=susie_max_iter)
+    finemapping_results = try
+        susie_rss_finemap(R, variants_info, y; n_causal=n_causal, max_iter=susie_max_iter)
+    catch
+        nothing
+    end
     return postprocess_finemapping_results!(variants_info, finemapping_results, lead_to_locus_r2)
 end
 
