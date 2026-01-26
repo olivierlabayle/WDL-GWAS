@@ -10,7 +10,7 @@ TESTDIR = joinpath(PKGDIR, "test")
 
 @testset "Test safe_pvalue_to_log10p" begin
     # Check Inf is output as 300 ceiling value otherwise plink2 will fail downstream
-    @test PopGen.safe_pvalue_to_log10p([0, 1, 1e-3]) == [300, 0, 3]
+    @test PopGen.safe_pvalue_to_log10p.([0, 1, 1e-3]) == [300, 0, 3]
 end
 
 @testset "Test harmonize_gwas_results" begin

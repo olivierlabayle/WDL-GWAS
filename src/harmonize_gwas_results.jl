@@ -1,13 +1,9 @@
-function safe_pvalue_to_log10p(pvalues)
-    log10pvals = zero(pvalues)
-    for index in eachindex(pvalues)
-        log10pval = abs(log10(pvalues[index]))
-        if log10pval === Inf
-            log10pval = 300
-        end
-        log10pvals[index] = log10pval
+function safe_pvalue_to_log10p(pvalue)
+    log10pval = abs(log10(pvalue))
+    if log10pval === Inf
+        log10pval = 300
     end
-    return log10pvals
+    return log10pval
 end
 
 function harmonize_gwas_results(gwas_results_file; source_software="saige", output="harmonized_results.tsv")
@@ -24,7 +20,7 @@ function harmonize_gwas_results(gwas_results_file; source_software="saige", outp
                 :AF_Allele2 => :ALLELE_1_FREQ,
                 :BETA,
                 :SE,
-                Symbol("p.value") => safe_pvalue_to_log10p => :LOG10P,
+                Symbol("p.value") => (x -> safe_pvalue_to_log10p.(x)) => :LOG10P,
                 [:N_case, :N_ctrl] => ((nca, nco) -> nca .+ nco) => :N,
                 :AC_Allele2 => :ALLELE_1_COUNT,
                 :MissingRate => :MISSING_RATE,
@@ -52,7 +48,7 @@ function harmonize_gwas_results(gwas_results_file; source_software="saige", outp
                 :AF_Allele2  => :ALLELE_1_FREQ,
                 :BETA,
                 :SE,
-                Symbol("p.value") => safe_pvalue_to_log10p => :LOG10P,
+                Symbol("p.value") => (x -> safe_pvalue_to_log10p.(x)) => :LOG10P,
                 :N,
                 :AC_Allele2 => :ALLELE_1_COUNT,
                 :MissingRate => :MISSING_RATE,
