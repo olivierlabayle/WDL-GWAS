@@ -8,6 +8,11 @@ using DataFrames
 PKGDIR = pkgdir(PopGen)
 TESTDIR = joinpath(PKGDIR, "test")
 
+@testset "Test safe_pvalue_to_log10p" begin
+    # Check Inf is output as 300 ceiling value otherwise plink2 will fail downstream
+    @test PopGen.safe_pvalue_to_log10p([0, 1, 1e-3]) == [300, 0, 3]
+end
+
 @testset "Test harmonize_gwas_results" begin
     shared_colnames = ["CHROM", "POS", "ID", "ALLELE_0", "ALLELE_1", "ALLELE_1_FREQ", "BETA", "SE", "LOG10P", "N"]
     regenie_only_colnames = ["TEST", "CHISQ", "EXTRA"]
@@ -44,6 +49,7 @@ TESTDIR = joinpath(PKGDIR, "test")
     julia_main()
     saige_source = CSV.read(gwas_results_file, DataFrame)
     saige_harmonized = CSV.read(output_file, DataFrame)
+    @test all(saige_harmonized.LOG10P .!= Inf)
     ## Nothing is lost
     @test size(saige_source) == size(saige_harmonized)
     ## Expected colnames
@@ -64,7 +70,7 @@ TESTDIR = joinpath(PKGDIR, "test")
         "SE" => [1], 
         "Tstat" => [1], 
         "var" => [1], 
-        "p.value" => [0.1], 
+        "p.value" => [0.], 
         "p.value.NA" => [0.1], 
         "Is.SPA" => [false], 
         "AF_case" => [0.1], 
@@ -87,6 +93,7 @@ TESTDIR = joinpath(PKGDIR, "test")
     julia_main()
     saige_source = CSV.read(gwas_results_file, DataFrame)
     saige_harmonized = CSV.read(output_file, DataFrame)
+    @test saige_harmonized.LOG10P == [300]
     ## Nothing is lost
     @test size(saige_harmonized) == (1, length(saige_output) + 1) # N column added
     ## Expected colnames
