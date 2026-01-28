@@ -2,7 +2,7 @@ neg_exp10(log10_pval::Real) = exp10(-log10_pval)
 
 neg_exp10(log10_pval::Missing) = missing
 
-function merge_chr_results(merge_list_file; output_prefix = "results.all_chr")
+function merge_chr_results(merge_list_file; output_prefix = "all_groups.phenotype")
     merge_list = readlines(merge_list_file)
     results = mapreduce(f -> CSV.read(f, DataFrame; missingstring="NA"), vcat, merge_list)
     CSV.write(string(output_prefix, ".tsv"), results; 
@@ -10,8 +10,28 @@ function merge_chr_results(merge_list_file; output_prefix = "results.all_chr")
         header=true,
         missingstring="NA"
     )
+    return results
+end
+
+function make_gwas_outputs(merge_list_file; maf=0.01, output_prefix = "all_groups.phenotype")
+    # Merge Results
+    results = merge_chr_results(merge_list_file; output_prefix = output_prefix)
+    # Plot Results
+    make_gwas_plots(results; maf=maf, output_prefix=output_prefix)
+
     return 0
 end
+
+function make_finemapping_outputs(merge_list_file, gwas_file; output_prefix = "all_groups.phenotype")
+    # Merge Results
+    finemapping_results = merge_chr_results(merge_list_file; output_prefix = output_prefix)
+    # Plot Results
+    gwas_results = CSV.read(gwas_file, DataFrame, delim="\t", missingstring="NA")
+    make_finemapping_plots(finemapping_results, gwas_results; output_prefix = output_prefix)
+
+    return 0
+end
+
 
 get_chr_out_string(pc_filename) = splitext(splitext(pc_filename)[1])[2][2:end]
 

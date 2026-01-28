@@ -38,8 +38,10 @@ results_dirs = readdir(joinpath(PKGDIR, "gwas_pooled_outputs/gwas/"), join=true)
 results_dir = results_dirs[argmax(mtime(d) for d in results_dirs)]
 
 # GWAS results
+gwas_execution_dir = joinpath(results_dir, "call-make_group_gwas_outputs", "shard-0", "execution")
+gwas_outputs = readdir(gwas_execution_dir, join=true)
 gwas_results = CSV.read(
-    joinpath(results_dir, "call-merge_gwas_group_chr_results", "shard-0", "execution", "all.AGE.gwas.tsv"),
+    joinpath(gwas_execution_dir, "all.AGE.gwas.tsv"),
     DataFrame
 )
 @test Set(gwas_results.CHROM) == Set([1, 2, 3])
@@ -47,16 +49,14 @@ gwas_results = CSV.read(
 @test maximum(gwas_results.N) < 400 # Filter applied
 ## SAIGE colnames
 @test names(gwas_results) == ["CHROM", "POS", "ID", "ALLELE_0", "ALLELE_1", "ALLELE_1_FREQ", "BETA", "SE", "LOG10P", "N", "ALLELE_1_COUNT", "MISSING_RATE", "T_STAT", "VAR"]
-# No Finemapping results (only headers)
-@test countlines(joinpath(results_dir, "call-merge_fp_group_chr_results", "shard-0", "execution", "all.AGE.finemapping.tsv")) == 1
-
-# Plots
-plots_dir = joinpath(results_dir, "call-gwas_group_plots", "shard-0", "execution")
-plots_subdir = readdir(plots_dir, join=true)[1]
-@test readdir(plots_subdir) == [
-    "all.AGE.manhattan.png",
-    "all.AGE.qq.png"
+## Plots
+plots_dir_index = findfirst(isdir, gwas_outputs)
+@test readdir(gwas_outputs[plots_dir_index]) == [
+    "all.AGE.gwas.manhattan.png",
+    "all.AGE.gwas.qq.png"
 ]
+# No Finemapping results (only headers)
+@test countlines(joinpath(results_dir, "call-make_group_finemapping_outputs", "shard-0", "execution", "all.AGE.finemapping.tsv")) == 1
 
 end
 

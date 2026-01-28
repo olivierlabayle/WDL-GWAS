@@ -199,41 +199,31 @@ end
 @test regenie_step_2_groups == Set(Iterators.product(expected_groups, ["chr1", "chr2", "chr3"]))
 
 # Test Merged gwas results
-merge_chr_results_dir = joinpath(results_dir, "call-merge_gwas_group_chr_results")
+group_gwas_outputs_dir = joinpath(results_dir, "call-make_group_gwas_outputs")
 merged_results_groups = Set([])
 for group_shard in 0:5
-    execution_dir = joinpath(merge_chr_results_dir, "shard-$group_shard", "execution")
+    execution_dir = joinpath(group_gwas_outputs_dir, "shard-$group_shard", "execution")
     files = readdir(execution_dir)
     gwas_merged_results_file = files[findfirst(endswith("gwas.tsv"), files)]
     ancestry, phenotype, _ = split(gwas_merged_results_file, ".")
     push!(merged_results_groups, "$ancestry.$phenotype")
+    ## Check plots
+    @test isfile(joinpath(execution_dir, string(ancestry, ".", phenotype, ".gwas.qq.png")))
+    @test isfile(joinpath(execution_dir, string(ancestry, ".", phenotype, ".gwas.manhattan.png")))
 end
 @test merged_results_groups == expected_groups
 
 # Test Merged finemapping results
-merge_chr_results_dir = joinpath(results_dir, "call-merge_fp_group_chr_results")
+group_finemapping_results_dir = joinpath(results_dir, "call-make_group_finemapping_outputs")
 merged_results_groups = Set([])
 for group_shard in 0:5
-    execution_dir = joinpath(merge_chr_results_dir, "shard-$group_shard", "execution")
+    execution_dir = joinpath(group_finemapping_results_dir, "shard-$group_shard", "execution")
     files = readdir(execution_dir)
     gwas_merged_results_file = files[findfirst(endswith("finemapping.tsv"), files)]
     ancestry, phenotype, _ = split(gwas_merged_results_file, ".")
     push!(merged_results_groups, "$ancestry.$phenotype")
 end
 @test merged_results_groups == expected_groups
-
-# Test Plots
-plots_dir = joinpath(results_dir, "call-gwas_group_plots")
-plots_groups = Set([])
-for group_shard in 0:5
-    execution_dir = joinpath(plots_dir, "shard-$group_shard", "execution")
-    files = readdir(execution_dir)
-    plot_files = filter(endswith(".png"), files)
-    @test length(plot_files) >= 2
-    ancestry, phenotype, _ = split(first(plot_files), ".")
-    push!(plots_groups, "$ancestry.$phenotype")
-end
-@test plots_groups == expected_groups
 
 # Test Meta-analysis
 meta_analysis_dir = joinpath(results_dir, "call-meta_analyse", "execution")
@@ -248,20 +238,20 @@ for file in meta_analysis_files
 end
 @test meta_analysed_phenotypes == Set(["SEVERE_PNEUMONIA", "SEVERE_COVID_19"])
 
+# Test Meta-analysis plots
+meta_analysis_plot_files = filter(endswith(".png"), readdir(meta_analysis_dir))
+@test Set(meta_analysis_plot_files) == Set([
+    "META_ANALYSIS.SEVERE_COVID_19.manhattan.png",
+    "META_ANALYSIS.SEVERE_COVID_19.qq.png",
+    "META_ANALYSIS.SEVERE_PNEUMONIA.manhattan.png",
+    "META_ANALYSIS.SEVERE_PNEUMONIA.qq.png"
+])
+
 # Test Meta-analysis finemapping
-meta_fp_analysis_dir = joinpath(results_dir, "call-merge_fp_meta_chr_results")
+meta_fp_analysis_dir = joinpath(results_dir, "call-make_meta_finemapping_outputs")
 for shard in [0, 1] # 2 shards for 2 phenotypes
     execution_dir = joinpath(meta_fp_analysis_dir, "shard-$shard", "execution")
     @test findfirst(endswith("finemapping.tsv"), readdir(execution_dir)) !== nothing
-end
-
-# Test Meta-analysis plots
-meta_plots_dir = joinpath(results_dir, "call-gwas_meta_plots")
-for shard in [0, 1] # 2 shards for 2 phenotypes
-    execution_dir = joinpath(meta_plots_dir, "shard-$shard", "execution")
-    files = readdir(execution_dir)
-    plot_files = filter(endswith(".png"), files)
-    @test length(plot_files) == 2
 end
 
 end

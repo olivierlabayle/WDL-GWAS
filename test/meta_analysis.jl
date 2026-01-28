@@ -65,6 +65,9 @@ end
 end
 
 @testset "Test meta_analyse" begin
+    # Two phenotypes are meta analysed
+    ## - SEVERE_COVID_19 has 1 group
+    ## - SEVERE_PNEUMONIA has 3 groups, 1 will be excluded
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "gwas.meta_analysis")
     gwas_results_list_file = joinpath(tmpdir, "regenie_files_list.txt")
@@ -87,14 +90,20 @@ end
         "CHROM", "POS", "ALLELE_0", "ALLELE_1", 
         "ALLELE_1_FREQ", "N", "NGROUPS"
     ])
+    # Check SEVERE_COVID_19
     meta_covid_19 = CSV.read(joinpath(tmpdir, "gwas.meta_analysis.SEVERE_COVID_19.gwas.tsv"), DataFrame)
     @test Set(names(meta_covid_19)) == expected_cols
     @test all(meta_covid_19.NGROUPS .== 1)
-    
+    # Check SEVERE_PNEUMONIA
     meta_pneumonia = CSV.read(joinpath(tmpdir, "gwas.meta_analysis.SEVERE_PNEUMONIA.gwas.tsv"), DataFrame)
     @test Set(names(meta_pneumonia)) == expected_cols
     meta_pneumonia[meta_pneumonia.ID .== "chr1:14012312:T:C", :NGROUPS] == [1]
     @test all(meta_pneumonia.NGROUPS .<= 2)
+    # Check plots have been created
+    @test isfile(string(output_prefix, ".SEVERE_COVID_19.manhattan.png"))
+    @test isfile(string(output_prefix, ".SEVERE_COVID_19.QQ.png"))
+    @test isfile(string(output_prefix, ".SEVERE_PNEUMONIA.manhattan.png"))
+    @test isfile(string(output_prefix, ".SEVERE_PNEUMONIA.QQ.png"))
 end
 
 end

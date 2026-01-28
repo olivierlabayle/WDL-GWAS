@@ -52,9 +52,10 @@ function run_metal_across_phenotypes!(regenie_files; output_prefix="gwas.meta_an
     return regenie_files
 end
 
-function post_process_metal_output(regenie_files; output_prefix="gwas.meta_analysis")
+function post_process_metal_output(regenie_files; maf=0.01, output_prefix="gwas.meta_analysis")
     for (phenotype_key, group) in pairs(groupby(regenie_files, :PHENOTYPE))
         metal_results = CSV.read(first(group.METAL_FILE), DataFrame; delim="\t")
+        # harmonize names
         select!(metal_results, 
             "MarkerName" => "ID",
             "Effect" => "BETA",
@@ -66,12 +67,18 @@ function post_process_metal_output(regenie_files; output_prefix="gwas.meta_analy
             "HetDf" => "HET_DF",
             "logHetP" => "LOG10P_HET"
         )
+        # Add group-based info
         append_GWAS_info_to_meta_analysis_results!(metal_results, group.FILE)
-        CSV.write(string(output_prefix, ".", phenotype_key.PHENOTYPE, ".gwas.tsv"), metal_results; 
+        # Write output file
+        phenotype_prefix = string(output_prefix, ".", phenotype_key.PHENOTYPE)
+        CSV.write(string(phenotype_prefix, ".gwas.tsv"), metal_results; 
             delim="\t", 
             header=true,
             missingstring="NA"
             )
+        # Make plots
+        make_gwas_plots(metal_results; maf=maf, output_prefix=phenotype_prefix)
+
     end
 end
 
@@ -119,11 +126,11 @@ Meta-analyse GWAS results from REGENIE using METAL. Groups and phenotypes are in
 - method: METAL meta-analysis method (default: "STDERR")
 - output_prefix: prefix for output files. Per phenotype results are written to "<output_prefix>.<phenotype>.gwas.tsv". (default: "gwas.meta_analysis")
 """
-function meta_analyse(regenie_files_list; exclude_string="ADMIXED", method="STDERR", output_prefix="gwas.meta_analysis")
+function meta_analyse(regenie_files_list; maf=0.01, exclude_string="ADMIXED", method="STDERR", output_prefix="gwas.meta_analysis")
     exclude = split(exclude_string, ",")
     regenie_files = load_meta_analysis_worklist(regenie_files_list; exclude = exclude)
     run_metal_across_phenotypes!(regenie_files; output_prefix=output_prefix, method=method)
-    post_process_metal_output(regenie_files, output_prefix=output_prefix)
+    post_process_metal_output(regenie_files; maf=maf, output_prefix=output_prefix)
 
     return 0
 end

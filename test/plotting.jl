@@ -47,20 +47,33 @@ end
     @test fig !== nothing
 end
 
-@testset "Test make_plots" begin
+@testset "Test make_gwas_plots and make_finemapping_plots" begin
+    gwas_file = joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.gwas.tsv")
+    finemapping_file = joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.finemapping.tsv")
     tmpdir = mktempdir()
-    output_prefix = joinpath(tmpdir, "plot")
-    copy!(ARGS,[
-        "make-plots", 
-        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.gwas.tsv"), 
-        joinpath(TESTDIR, "assets", "results", "results.all_chr.EUR.SEVERE_COVID_19.finemapping.tsv"), 
-        "--maf=0.01",
-        "--output-prefix=$output_prefix"
-        ]
+    output_prefix = joinpath(tmpdir, "GROUP.PHENOTYPE")
+    # GWAS plots
+    gwas_results = CSV.read(
+        gwas_file,
+        DataFrame;
+        missingstring="NA",
+        delim="\t"
     )
-    julia_main()
+    PopGen.make_gwas_plots(gwas_results; maf=0.01, output_prefix=output_prefix)
     @test isfile(string(output_prefix, ".manhattan.png"))
     @test isfile(string(output_prefix, ".qq.png"))
+    # Finemapping plots
+    finemapping_results = CSV.read(
+        finemapping_file,
+        DataFrame;
+        missingstring="NA",
+        delim="\t"
+    )
+    PopGen.make_finemapping_plots(
+        finemapping_results, 
+        gwas_results; 
+        output_prefix=output_prefix
+    )
     @test isfile(string(output_prefix, ".rs12732514.locuszoom.png"))
     @test isfile(string(output_prefix, ".rs7515509.locuszoom.png"))
 end

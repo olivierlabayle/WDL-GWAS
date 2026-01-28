@@ -159,9 +159,25 @@ function region_plot(region_data)
     return fig
 end
 
-function make_plots(gwas_file, finemapping_file; maf=0.01, output_prefix = "gwas.plot")
-    group, phenotype, _ = split(basename(gwas_file), ".")
-    gwas_results = genetics_makie_gwas_harmonize(CSV.read(gwas_file, DataFrame, delim="\t", missingstring="NA"))
+function make_finemapping_plots(finemapping_results, gwas_results; output_prefix="all_groups.phenotype")
+    finemapping_results = genetics_makie_fp_harmonize(finemapping_results)
+    gwas_results = genetics_makie_gwas_harmonize(gwas_results)
+
+    for (locus_key, locus_group) in pairs(groupby(finemapping_results, :LOCUS_ID))
+        region_data = innerjoin(
+            gwas_results,
+            DataFrames.select(locus_group, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2, :SUSIE_CONVERGED]), 
+            on=[:ID]
+        )
+        fig = region_plot(region_data)
+        save(string(output_prefix, ".", replace(locus_key.LOCUS_ID, ":" => "_"), ".locuszoom.png"), fig)
+    end
+end
+
+function make_gwas_plots(gwas_results; maf=0.01, output_prefix = "all_groups.phenotype")
+    output_prefix_comps = split(basename(output_prefix), ".")
+    group, phenotype = output_prefix_comps[1], output_prefix_comps[2]
+    gwas_results = genetics_makie_gwas_harmonize(gwas_results)
     maf_filtered_gwas_results = subset(gwas_results,
         :ALLELE_1_FREQ => x -> x .>= maf,
         skipmissing=true
@@ -173,16 +189,4 @@ function make_plots(gwas_file, finemapping_file; maf=0.01, output_prefix = "gwas
     # Plot QQ
     fig = qqplot(maf_filtered_gwas_results; title=title)
     save(string(output_prefix, ".qq.png"), fig)
-    # Plot locuszoom for top hits
-    finemapping_results = genetics_makie_fp_harmonize(CSV.read(finemapping_file, DataFrame, delim="\t", missingstring="NA"))
-    for (locus_key, locus_group) in pairs(groupby(finemapping_results, :LOCUS_ID))
-        region_data = innerjoin(
-            gwas_results,
-            DataFrames.select(locus_group, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2, :SUSIE_CONVERGED]), 
-            on=[:ID]
-        )
-        fig = region_plot(region_data)
-        save(string(output_prefix, ".", replace(locus_key.LOCUS_ID, ":" => "_"), ".locuszoom.png"), fig)
-    end
-    return 0
 end
