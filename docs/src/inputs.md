@@ -41,7 +41,7 @@ PCA is performed using [plink2's PCA](https://www.cog-genomics.org/plink/2.0/str
 
 We offer two different options to run GWAS, [SAIGE](https://saigegit.github.io/SAIGE-doc/) (default) and [REGENIE](https://rgcgithub.github.io/regenie/options/). Please refer to their respective documentation for the below options.
 
-- `gwas_software` (default: `saige`): One of `regenie` or `saige`.
+- `gwas_software` (default: `saige`): One of `regenie`, `saige` or `plink2`.
 - `regenie_cv_folds` (default: `loocv`): Number of folds for Regenie step 1. Any integer is valid.
 - `regenie_bsize` (default 1000): Regenie block size.
 
@@ -49,6 +49,7 @@ We offer two different options to run GWAS, [SAIGE](https://saigegit.github.io/S
 
 Finemapping proceeds in two stages. First clumps are formed using [plink2 LD-based result clumping](https://www.cog-genomics.org/plink/2.0/postproc) and lead variants are identified. Then a window is formed around the lead variant to be further finemapped with [SuSiE](https://stephenslab.github.io/susieR/).
 
+- `finemap` (default `true`): Whether to proceed to finemapping of significant loci.
 - `min_sig_clump_size` (default: `10`): Defines the minimum number of variants within a clump for a locus to be considered for finemapping.
 `lead_pvalue` (default: `5e-8`): A clump's lead variant must have at least this p-value.
 - `p2_pvalue` (default: `5e-5`): Other variants in the clump must have at least this p-value.
