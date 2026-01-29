@@ -90,8 +90,7 @@ end
         "SEVERE_PNEUMONIA",
         "AGE_x_AGE",
         "AGE_x_SEX",
-        "COHORT__FUTURE_HEALTH",
-        "COHORT__UKB"
+        "COHORT__FUTURE_HEALTH"
     ]
     @test names(updated_covariates) == expected_covariate_cols
     for row in eachrow(updated_covariates)
@@ -103,7 +102,7 @@ end
         end
     end
     # Check covariates list
-    @test readlines(joinpath(tmpdir, "gwas.covariates_list.txt"),) == ["AGE", "AGE_x_AGE", "AGE_x_SEX", "COHORT__FUTURE_HEALTH", "COHORT__UKB"]
+    @test readlines(joinpath(tmpdir, "gwas.covariates_list.txt"),) == ["AGE", "AGE_x_AGE", "AGE_x_SEX", "COHORT__FUTURE_HEALTH"]
         
     # Check groups files
     case_control_counts = sort(combine(
@@ -129,7 +128,7 @@ end
                 joined = innerjoin(updated_covariates, individuals, on = [:FID, :IID])
                 @test all(==(ancestry), joined.SUPERPOPULATION)
                 @test all(==(sex), joined.SEX)
-                @test nrow(dropmissing(joined[!, ["SEVERE_COVID_19", "AGE", "AGE_x_AGE", "AGE_x_SEX", "COHORT__FUTURE_HEALTH", "COHORT__UKB"]])) == nrow(joined)
+                @test nrow(dropmissing(joined[!, ["SEVERE_COVID_19", "AGE", "AGE_x_AGE", "AGE_x_SEX", "COHORT__FUTURE_HEALTH"]])) == nrow(joined)
             end
         end
     end

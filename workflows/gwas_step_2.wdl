@@ -2,6 +2,83 @@ version 1.0
 
 import "structs.wdl"
 
+task plink2_gwas {
+    input {
+            String docker_image
+            String julia_cmd
+            String group_name
+            String chr
+            File pgen_file
+            File pvar_file
+            File psam_file
+            File sample_list
+            File covariates_file
+            Array[String] covariates_list
+            String loco_pca
+            String npcs = "10"
+            String mac = "10"
+        }
+
+    String chr_out = if (loco_pca == "false") then "0" else "~{chr}"
+
+    command <<<
+        input_prefix=$(dirname "~{pgen_file}")/$(basename "~{pgen_file}" .pgen)
+
+        # phenotype from group_name
+        phenotype=$(echo ~{group_name} | cut -d'.' -f2)
+        echo $phenotype > phenotype.txt
+
+        plink2 \
+            --pfile ${input_prefix} \
+            --keep ~{sample_list} \
+            --max-alleles 2 \
+            --min-alleles 2 \
+            --mac ~{mac} \
+            --rm-dup exclude-all list \
+            --make-pgen \
+            --out ${input_prefix}.biallelic
+        
+        # Make covariates list
+        pc_list=$(printf "CHR~{chr_out}_OUT_PC%s," {1..~{npcs}} | sed 's/,$//')
+        full_covariates_list="~{sep="," covariates_list},${pc_list}"
+
+        plink2 \
+            --pfile ${input_prefix}.biallelic \
+            --pheno ~{covariates_file} \
+            --pheno-name ${phenotype} \
+            --covar ~{covariates_file} \
+            --covar-name ${full_covariates_list} \
+            --covar-variance-standardize \
+            --1 \
+            --glm hide-covar log10 \
+            --out gwas_output
+
+        if [[ -f "gwas_output.${phenotype}.glm.linear" ]]; then
+            gwas_file="gwas_output.${phenotype}.glm.linear"
+        elif [[ -f "gwas_output.${phenotype}.glm.logistic.hybrid" ]]; then
+            gwas_file="gwas_output.${phenotype}.glm.logistic.hybrid"
+        else
+            echo "Error: no GWAS output found. Plink2 must have errored or the GWAS mode is not supported." >&2
+            exit 1
+        fi
+        
+        ~{julia_cmd} harmonize-gwas-results \
+            ${gwas_file} \
+            --source-software=plink2 \
+            --output="~{group_name}.chr~{chr}_${phenotype}.tsv"
+    >>>
+
+    output {
+        File summary_stats = "${group_name}.chr${chr}_" + read_string("phenotype.txt") + ".tsv"
+    }
+
+    runtime {
+        docker: docker_image
+        dx_instance_type: "mem2_ssd1_v2_x8"
+    }
+
+}
+
 task saige_step_2 {
     input {
         String docker_image
@@ -210,7 +287,31 @@ workflow gwas_step_2 {
         }
     }
 
+    if (gwas_software == "plink2") {
+        call plink2_gwas {
+            input:
+                docker_image = docker_image,
+                julia_cmd = julia_cmd,
+                group_name = group_name,
+                chr = imputed_chr_fileset.chr,
+                pgen_file = imputed_chr_fileset.pgen,
+                pvar_file = imputed_chr_fileset.pvar,
+                psam_file = imputed_chr_fileset.psam,
+                sample_list = sample_list,
+                covariates_file = covariates_file,
+                covariates_list = covariates_list,
+                loco_pca = loco_pca,
+                npcs = npcs,
+                mac = mac
+        }
+    }
+
     output {
-        File? gwas_output = if (gwas_software == "saige") then saige_step_2.summary_stats  else regenie_step_2.summary_stats
+        File? gwas_output = if (gwas_software == "saige") then 
+                saige_step_2.summary_stats 
+            else if (gwas_software == "saige") then 
+                regenie_step_2.summary_stats
+            else 
+                plink2_gwas.summary_stats
     }
 }

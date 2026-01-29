@@ -6,7 +6,7 @@ function add_user_defined_covariates!(covariates, covariates_string)
         if variable ∈ all_colnames
             if eltype(covariates[!, variable]) <: AbstractString
                 covariates[!, variable] = categorical(covariates[!, variable])
-                mach = machine(OneHotEncoder(), covariates[!, [variable]])
+                mach = machine(OneHotEncoder(drop_last=true), covariates[!, [variable]]) ## Need to drop last to avoid multicolinearity in GWAS
                 fit!(mach, verbosity=0)
                 Xt = MLJBase.transform(mach)
                 for colname in names(Xt)

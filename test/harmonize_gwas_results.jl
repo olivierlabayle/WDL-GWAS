@@ -18,7 +18,8 @@ end
     regenie_only_colnames = ["TEST", "CHISQ", "EXTRA"]
     saige_only_colnames = ["ALLELE_1_COUNT", "MISSING_RATE", "T_STAT", "VAR"]
     saige_binary_only_colnames = ["N_CASES", "N_CONTROLS", "PVAL_NA", "IS_SPA", "AF_CASES", "AF_CONTROLS", "N_CASES_HOM", "N_CASES_HET", "N_CONTROLS_HOM", "N_CONTROLS_HET"]
-
+    plink2_binary_only_columns = ["TEST", "FIRTH", "ERRCODE", "Z_STAT"]
+    plink2_continuous_only_columns = ["TEST", "ERRCODE", "T_STAT"]
     tmpdir = mktempdir()
     # Test REGENIE
     gwas_results_file = joinpath(TESTDIR, "assets", "gwas_software_outputs", "all.AGE.chr1_AGE.regenie")
@@ -98,6 +99,38 @@ end
     @test size(saige_harmonized) == (1, length(saige_output) + 1) # N column added
     ## Expected colnames
     @test names(saige_harmonized) == vcat(shared_colnames, saige_only_colnames, saige_binary_only_colnames)
+
+    # Test plink2 binary trait
+    gwas_results_file = joinpath(TESTDIR, "assets", "gwas_software_outputs", "all.AGE.chr1.glm.logistic.hybrid")
+    output_file = joinpath(tmpdir, "plink2.harmonized.binary.tsv")
+    copy!(ARGS, [
+        "harmonize-gwas-results",
+        gwas_results_file,
+        "--source-software=plink2",
+        "--output=$output_file"
+    ])
+    julia_main()
+    plink2_harmonized = CSV.read(output_file, DataFrame)
+    ## Nothing is lost
+    @test nrow(plink2_harmonized) == countlines(gwas_results_file) - 1
+    ## Expected colnames
+    @test names(plink2_harmonized) == vcat(shared_colnames, plink2_binary_only_columns)
+
+    # Test plink2 continuous trait
+    gwas_results_file = joinpath(TESTDIR, "assets", "gwas_software_outputs", "all.AGE.chr1.glm.linear")
+    output_file = joinpath(tmpdir, "plink2.harmonized.continuous.tsv")
+    copy!(ARGS, [
+        "harmonize-gwas-results",
+        gwas_results_file,
+        "--source-software=plink2",
+        "--output=$output_file"
+    ])
+    julia_main()
+    plink2_harmonized = CSV.read(output_file, DataFrame)
+    ## Nothing is lost
+    @test nrow(plink2_harmonized) == countlines(gwas_results_file) - 1
+    ## Expected colnames
+    @test names(plink2_harmonized) == vcat(shared_colnames, plink2_continuous_only_columns)
 end
 
 end

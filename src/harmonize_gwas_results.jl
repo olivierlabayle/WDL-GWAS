@@ -72,6 +72,43 @@ function harmonize_gwas_results(gwas_results_file; source_software="saige", outp
             :CHISQ,
             :EXTRA
         )
+    elseif source_software == "plink2"
+        # Binary trait
+        if "OR" in names(gwas_results)
+            DataFrames.select(gwas_results,
+                Symbol("#CHROM") => :CHROM,
+                :POS,
+                :ID,
+                :OMITTED => :ALLELE_0,
+                :A1 => :ALLELE_1,
+                :A1_FREQ  => :ALLELE_1_FREQ,
+                :OR => (x -> log.(x)) => :BETA,
+                Symbol("LOG(OR)_SE") => :SE,
+                :NEG_LOG10_P => :LOG10P,
+                :OBS_CT => :N,
+                :TEST,
+                Symbol("FIRTH?") => :FIRTH,
+                :ERRCODE,
+                :Z_STAT
+            )
+        # Continuous trait
+        else
+            DataFrames.select(gwas_results,
+                Symbol("#CHROM") => :CHROM,
+                :POS,
+                :ID,
+                :OMITTED => :ALLELE_0,
+                :A1 => :ALLELE_1,
+                :A1_FREQ  => :ALLELE_1_FREQ,
+                :BETA,
+                :SE,
+                :NEG_LOG10_P => :LOG10P,
+                :OBS_CT => :N,
+                :TEST,
+                :ERRCODE,
+                :T_STAT
+            )
+        end
     else
         throw(ArgumentError("GWAS software $source_software is not supported."))
     end

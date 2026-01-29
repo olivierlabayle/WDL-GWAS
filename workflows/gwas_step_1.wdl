@@ -196,6 +196,16 @@ workflow gwas_step_1 {
         String mac
     }
 
+    call make_fake_regenie_step_1 {
+        input:
+            group_name = group_name
+    }
+
+    call make_fake_saige_step_1 {
+        input:
+            group_name = group_name
+    }
+
     if (gwas_software == "regenie") {
         call regenie_step_1 {
             input:
@@ -212,11 +222,6 @@ workflow gwas_step_1 {
                 maf = maf,
                 mac = mac
         }
-
-        call make_fake_saige_step_1 {
-            input:
-                group_name = group_name
-        }
     }
 
     if (gwas_software == "saige") {
@@ -232,11 +237,6 @@ workflow gwas_step_1 {
                 covariates_list = covariates_list,
                 maf = maf,
                 mac = mac
-        }
-
-        call make_fake_regenie_step_1 {
-            input:
-                group_name = group_name
         }
     }
 
