@@ -309,7 +309,7 @@ workflow gwas_step_2 {
     output {
         File? gwas_output = if (gwas_software == "saige") then 
                 saige_step_2.summary_stats 
-            else if (gwas_software == "saige") then 
+            else if (gwas_software == "regenie") then 
                 regenie_step_2.summary_stats
             else 
                 plink2_gwas.summary_stats

@@ -177,7 +177,7 @@ end
 function make_gwas_plots(gwas_results; maf=0.01, output_prefix = "all_groups.phenotype")
     output_prefix_comps = split(basename(output_prefix), ".")
     group, phenotype = output_prefix_comps[1], output_prefix_comps[2]
-    gwas_results = genetics_makie_gwas_harmonize(gwas_results)
+    gwas_results = genetics_makie_gwas_harmonize(dropmissing(gwas_results, [:CHROM, :POS, :LOG10P]))
     maf_filtered_gwas_results = subset(gwas_results,
         :ALLELE_1_FREQ => x -> x .>= maf,
         skipmissing=true

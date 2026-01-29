@@ -169,7 +169,7 @@ workflow gwas {
                     input:
                         docker_image = docker_image,
                         julia_cmd = get_julia_cmd.julia_cmd,
-                        gwas_results = run_gwas_step_2.gwas_output,
+                        gwas_results = select_first([run_gwas_step_2.gwas_output]),
                         pgen_file = imputed_chr_fileset.pgen,
                         pvar_file = imputed_chr_fileset.pvar,
                         psam_file = imputed_chr_fileset.psam,
@@ -444,7 +444,7 @@ task finemapping {
     input {
         String docker_image
         String julia_cmd
-        File? gwas_results
+        File gwas_results
         File pgen_file
         File pvar_file
         File psam_file
