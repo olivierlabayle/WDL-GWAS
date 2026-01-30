@@ -101,9 +101,9 @@ end
     @test all(meta_pneumonia.NGROUPS .<= 2)
     # Check plots have been created
     @test isfile(string(output_prefix, ".SEVERE_COVID_19.manhattan.png"))
-    @test isfile(string(output_prefix, ".SEVERE_COVID_19.QQ.png"))
+    @test isfile(string(output_prefix, ".SEVERE_COVID_19.qq.png"))
     @test isfile(string(output_prefix, ".SEVERE_PNEUMONIA.manhattan.png"))
-    @test isfile(string(output_prefix, ".SEVERE_PNEUMONIA.QQ.png"))
+    @test isfile(string(output_prefix, ".SEVERE_PNEUMONIA.qq.png"))
 end
 
 end

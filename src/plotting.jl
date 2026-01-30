@@ -180,6 +180,7 @@ function make_gwas_plots(gwas_results; maf=0.01, output_prefix = "all_groups.phe
     gwas_results = genetics_makie_gwas_harmonize(dropmissing(gwas_results, [:CHROM, :POS, :LOG10P]))
     maf_filtered_gwas_results = subset(gwas_results,
         :ALLELE_1_FREQ => x -> x .>= maf,
+        :P => x -> (x .!= 0) .&& (x .!= 1),
         skipmissing=true
     )
     # Plot Manhattan
