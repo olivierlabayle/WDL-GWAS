@@ -194,6 +194,7 @@ workflow gwas_step_1 {
         String bsize
         String maf
         String mac
+        String npcs
     }
 
     call make_fake_regenie_step_1 {
@@ -236,7 +237,8 @@ workflow gwas_step_1 {
                 covariates_file = covariates_file,
                 covariates_list = covariates_list,
                 maf = maf,
-                mac = mac
+                mac = mac,
+                npcs = npcs
         }
     }
 

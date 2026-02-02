@@ -110,11 +110,13 @@ end
         "--output=$output_file"
     ])
     julia_main()
-    plink2_harmonized = CSV.read(output_file, DataFrame)
+    plink2_harmonized = CSV.read(output_file, DataFrame; missingstring="NA")
     ## Nothing is lost
     @test nrow(plink2_harmonized) == countlines(gwas_results_file) - 1
     ## Expected colnames
     @test names(plink2_harmonized) == vcat(shared_colnames, plink2_binary_only_columns)
+    ## lines 3 and 8 are parsed as missing since value leads to Inf or error has occured
+    all(ismissing, Matrix(plink2_harmonized[[3, 8], [:BETA, :SE, :LOG10P]]))
 
     # Test plink2 continuous trait
     gwas_results_file = joinpath(TESTDIR, "assets", "gwas_software_outputs", "all.AGE.chr1.glm.linear")
@@ -126,11 +128,14 @@ end
         "--output=$output_file"
     ])
     julia_main()
-    plink2_harmonized = CSV.read(output_file, DataFrame)
+    plink2_harmonized = CSV.read(output_file, DataFrame; missingstring="NA")
     ## Nothing is lost
     @test nrow(plink2_harmonized) == countlines(gwas_results_file) - 1
     ## Expected colnames
     @test names(plink2_harmonized) == vcat(shared_colnames, plink2_continuous_only_columns)
+    ## lines 3 and 8 are parsed as missing since value leads to Inf or error has occured
+    all(ismissing, Matrix(plink2_harmonized[[3, 8], [:BETA, :SE, :LOG10P]]))
+
 end
 
 end

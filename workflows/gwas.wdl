@@ -137,7 +137,8 @@ workflow gwas {
                 cv_folds = regenie_cv_folds,
                 bsize = regenie_bsize,
                 maf = maf,
-                mac = mac
+                mac = mac,
+                npcs = npcs
         }
 
         # Second run regenie step 2 across imputed chromosomes filesets

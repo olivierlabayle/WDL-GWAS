@@ -6,6 +6,32 @@ function safe_pvalue_to_log10p(pvalue)
     return log10pval
 end
 
+function postprocess_plink2_binary_result(e, or, se, lp)
+    missing_result = (missing, missing, missing)
+    return if e != "."
+        missing_result
+    elseif any(ismissing, (or, se, lp))
+        missing_result
+    else
+        result = (log(or), se, lp)
+        any(isinf, result) ? missing_result : result
+    end
+end
+
+function postprocess_plink2_continuous_result(e, beta, se, lp)
+    missing_result = (missing, missing, missing)
+    result = (beta, se, lp)
+    return if e != "."
+        missing_result
+    elseif any(ismissing, result)
+        missing_result
+    elseif any(isinf, result)
+        missing_result
+    else
+        result
+    end
+end
+
 function harmonize_gwas_results(gwas_results_file; source_software="saige", output="harmonized_results.tsv")
     gwas_results = CSV.read(gwas_results_file, DataFrame; missingstring="NA")
     harmonized_results = if source_software == "saige"
@@ -82,9 +108,7 @@ function harmonize_gwas_results(gwas_results_file; source_software="saige", outp
                 :OMITTED => :ALLELE_0,
                 :A1 => :ALLELE_1,
                 :A1_FREQ  => :ALLELE_1_FREQ,
-                :OR => (x -> log.(x)) => :BETA,
-                Symbol("LOG(OR)_SE") => :SE,
-                :NEG_LOG10_P => :LOG10P,
+                [:ERRCODE, :OR, Symbol("LOG(OR)_SE"), :NEG_LOG10_P] => ByRow(postprocess_plink2_binary_result) => [:BETA, :SE, :LOG10P],
                 :OBS_CT => :N,
                 :TEST,
                 Symbol("FIRTH?") => :FIRTH,
@@ -100,9 +124,7 @@ function harmonize_gwas_results(gwas_results_file; source_software="saige", outp
                 :OMITTED => :ALLELE_0,
                 :A1 => :ALLELE_1,
                 :A1_FREQ  => :ALLELE_1_FREQ,
-                :BETA,
-                :SE,
-                :NEG_LOG10_P => :LOG10P,
+                [:ERRCODE, :BETA, :SE, :NEG_LOG10_P] => ByRow(postprocess_plink2_continuous_result) => [:BETA, :SE, :LOG10P],
                 :OBS_CT => :N,
                 :TEST,
                 :ERRCODE,
