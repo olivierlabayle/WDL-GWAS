@@ -65,6 +65,18 @@ end
     @test only(loci) == (lead_id = "chr1:183905563:G:A", neglog10pval = 1, locus_start = 40310265, locus_end = 231799576, chr = 1)
 end
 
+@testset "Test filter_missing_variants" begin
+    variants_info = DataFrame(
+        BETA = [1, 1, missing, missing, 0],
+        SE   = [1, missing, missing, 1, 1]
+    )
+    R = [1 2 3 4 5; 6 7 8 9 10; 11 12 13 14 15; 16 17 18 19 20; 21 22 23 24 25]
+    variants_info_nomissing, R_nomissing = PopGen.filter_missing_variants(variants_info, R)
+    @test variants_info_nomissing.BETA == [1, 0]
+    @test variants_info_nomissing.SE == [1, 1]
+    @test R_nomissing == [1 5; 21 25]
+end
+
 @testset "Integration Test: finemap_significant_regions" begin
     gwas_results_file = joinpath(TESTDIR, "assets", "results", "regenie.results.group.phenotype.tsv")
     pgen_prefix = joinpath(TESTDIR, "assets", "imputed", "chr1.qced")

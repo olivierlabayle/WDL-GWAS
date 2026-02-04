@@ -241,6 +241,13 @@ function get_LD_matrix(pgen_prefix, locus)
     return R, variants
 end
 
+function filter_missing_variants(variants_info, R)
+    missing_mask = .!(ismissing.(variants_info.BETA) .|| ismissing.(variants_info.SE))
+    variants_info = variants_info[missing_mask, :]
+    R = R[missing_mask, missing_mask]
+    return variants_info, R
+end
+
 function susie_rss_finemap(R, variants_info, y; n_causal=10, max_iter=1000)
     var_y, nsamples = var(y), length(y)
     shat = variants_info.SE
@@ -281,6 +288,7 @@ function finemap_locus_rss(locus, gwas_results, pgen_prefix, y;
     lead_to_locus_r2 = compute_lead_to_locus_r2(locus, pgen_prefix)
     R, variants = get_LD_matrix(pgen_prefix, locus)
     variants_info = initialize_variants_info_rss(pgen_prefix, variants, gwas_results)
+    variants_info, R = filter_missing_variants(variants_info, R)
     finemapping_results = try
         susie_rss_finemap(R, variants_info, y; n_causal=n_causal, max_iter=susie_max_iter)
     catch
