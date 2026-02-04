@@ -25,13 +25,13 @@ workflow gwas {
         String maf = "0.01"
         String mac = "10"
         String ip_values = "1000 50 0.05"
-        # PCA parameters
-        String loco_pca = "false"
         # GWAS software
-        String gwas_software = "saige"
+        String gwas_software = "regenie"
         # Regenie parameters
         String regenie_cv_folds = "loocv" # or an integer
         String regenie_bsize = "1000"
+        # PCA parameters
+        String loco_pca = if (gwas_software == "saige") then "false" else "true"
         # Finemapping parameters
         String finemap = "true"
         String min_sig_clump_size = "10"

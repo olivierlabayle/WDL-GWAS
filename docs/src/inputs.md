@@ -34,14 +34,14 @@ PCA is performed using [plink2's PCA](https://www.cog-genomics.org/plink/2.0/str
 - `npcs` (default 10): Number of principal components to use to account for population structure.
 - `ip_values` (default: `1000 50 0.05`): A string of values used to create independent genotypes for PCA (see [here](https://www.cog-genomics.org/plink/2.0/ld)).
 - `approx_pca` (default: true): Whether to use an approximation to the PCA algorithm (see [here](https://www.cog-genomics.org/plink/2.0/strat)). Turning this to `false` if used only for small datasets, for instance during testing.
-- `loco_pca` (default: false): Whether principal components should be computed in a LOCO fashion to be used as part of the GWAS covariates (cannot be used with `gwas_software=saige`).
+- `loco_pca` (default: true): Whether principal components should be computed in a LOCO fashion to be used as part of the GWAS covariates (cannot be used with `gwas_software=saige`).
 
 
 ## GWAS Options
 
 We offer two different options to run GWAS, [SAIGE](https://saigegit.github.io/SAIGE-doc/) (default) and [REGENIE](https://rgcgithub.github.io/regenie/options/). Please refer to their respective documentation for the below options.
 
-- `gwas_software` (default: `saige`): One of `regenie`, `saige` or `plink2`.
+- `gwas_software` (default: `regenie`): One of `regenie`, `saige` or `plink2`.
 - `regenie_cv_folds` (default: `loocv`): Number of folds for Regenie step 1. Any integer is valid.
 - `regenie_bsize` (default 1000): Regenie block size.
 
