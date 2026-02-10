@@ -39,11 +39,12 @@ PCA is performed using [plink2's PCA](https://www.cog-genomics.org/plink/2.0/str
 
 ## GWAS Options
 
-We offer two different options to run GWAS, [SAIGE](https://saigegit.github.io/SAIGE-doc/) (default) and [REGENIE](https://rgcgithub.github.io/regenie/options/). Please refer to their respective documentation for the below options.
+We offer three different options to run GWAS, [REGENIE](https://rgcgithub.github.io/regenie/options/), [SAIGE](https://saigegit.github.io/SAIGE-doc/) and [plink2](https://www.cog-genomics.org/plink/2.0/assoc). Please refer to their respective documentation for the below options.
 
 - `gwas_software` (default: `regenie`): One of `regenie`, `saige` or `plink2`.
 - `regenie_cv_folds` (default: `loocv`): Number of folds for Regenie step 1. Any integer is valid.
 - `regenie_bsize` (default 1000): Regenie block size.
+- `plink2_vif` (default `50`): Variance inflation factor threshold. With categorical covariates this may be too stringent. Check for collinearity and increase if needed.
 
 ## Fine-Mapping Options
 

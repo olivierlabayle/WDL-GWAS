@@ -30,6 +30,8 @@ workflow gwas {
         # Regenie parameters
         String regenie_cv_folds = "loocv" # or an integer
         String regenie_bsize = "1000"
+        # Plink2 parameters
+        String plink2_vif = "50"
         # PCA parameters
         String loco_pca = if (gwas_software == "saige") then "false" else "true"
         # Finemapping parameters
@@ -161,7 +163,8 @@ workflow gwas {
                     regenie_bsize = regenie_bsize,
                     mac = mac,
                     npcs = npcs,
-                    loco_pca = loco_pca
+                    loco_pca = loco_pca,
+                    plink2_vif = plink2_vif
             }
 
             if (finemap == "true") {

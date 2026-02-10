@@ -17,6 +17,7 @@ task plink2_gwas {
             String loco_pca
             String npcs = "10"
             String mac = "10"
+            String vif = "50"
         }
 
     String chr_out = if (loco_pca == "false") then "0" else "~{chr}"
@@ -49,6 +50,7 @@ task plink2_gwas {
             --covar ~{covariates_file} \
             --covar-name ${full_covariates_list} \
             --covar-variance-standardize \
+            --vif ~{vif} \
             --1 \
             --glm hide-covar log10 \
             --out gwas_output
@@ -246,6 +248,7 @@ workflow gwas_step_2 {
         String mac
         String npcs
         String loco_pca
+        String plink2_vif
     }
 
     if (gwas_software == "regenie") {
@@ -302,7 +305,8 @@ workflow gwas_step_2 {
                 covariates_list = covariates_list,
                 loco_pca = loco_pca,
                 npcs = npcs,
-                mac = mac
+                mac = mac,
+                vif = plink2_vif
         }
     }
 
