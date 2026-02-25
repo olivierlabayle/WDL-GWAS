@@ -33,37 +33,6 @@ TESTDIR = joinpath(PKGDIR, "test")
     )
 end
 
-@testset "Test append_GWAS_info_to_meta_analysis_results!" begin
-    phenotype_gwas_files = filter(
-        x -> occursin("SEVERE_PNEUMONIA", x),
-        readdir(joinpath(TESTDIR, "assets", "meta_analysis"), join=true)
-    )
-    metal_results = CSV.read(
-        joinpath(TESTDIR, "assets", "meta_analysis", "AFR.SEVERE_PNEUMONIA.gwas.tsv"), 
-        DataFrame, 
-        delim="\t", 
-        select=[:ID]
-    )
-    PopGen.append_GWAS_info_to_meta_analysis_results!(metal_results, phenotype_gwas_files)
-    @test nrow(metal_results) == 19
-    @test names(metal_results) == [
-        "ID", "CHROM", "POS", "ALLELE_0", "ALLELE_1", "ALLELE_1_FREQ", "N", "NGROUPS"
-    ]
-    # "chr1:14012312:T:C" is not in the EUR file
-    @test metal_results[metal_results.ID .== "chr1:14012312:T:C", :NGROUPS] == [2]
-    
-    for gwas_file in phenotype_gwas_files
-        gwas_results = CSV.read(gwas_file, DataFrame; delim="\t", select=[:ID, :CHROM, :POS, :ALLELE_0, :ALLELE_1, :ALLELE_1_FREQ, :N])
-        joined = leftjoin(
-            select(metal_results, :ID, :ALLELE_1_FREQ => :MIN_ALLELE_1_FREQ, :N => :SUM_N), 
-            select(gwas_results, :ID, :ALLELE_1_FREQ => :GROUP_ALLELE_1_FREQ, :N => :GROUP_N), 
-            on=:ID
-        )
-        @test all(skipmissing(joined.MIN_ALLELE_1_FREQ .<= joined.GROUP_ALLELE_1_FREQ))
-        @test all(skipmissing(joined.SUM_N .>= joined.GROUP_N))
-    end
-end
-
 @testset "Test meta_analyse" begin
     # Two phenotypes are meta analysed
     ## - SEVERE_COVID_19 has 1 group
@@ -72,6 +41,7 @@ end
     output_prefix = joinpath(tmpdir, "gwas.meta_analysis")
     gwas_results_list_file = joinpath(tmpdir, "regenie_files_list.txt")
     regenie_files_list = readdir(joinpath(TESTDIR, "assets", "meta_analysis"), join=true)
+    maf = 0.1
     open(gwas_results_list_file, "w") do io
         for f in regenie_files_list
             println(io, f)
@@ -81,6 +51,7 @@ end
         ["meta-analyse", 
         gwas_results_list_file,
         "--exclude=SAS",
+        "--maf=$maf",
         "--output-prefix=$output_prefix"
     ])
     julia_main()
@@ -88,17 +59,24 @@ end
         "ID", "BETA", "SE", "LOG10P", "DIRECTION", 
         "HET_ISQ", "HET_CHISQ", "HET_DF", "LOG10P_HET", 
         "CHROM", "POS", "ALLELE_0", "ALLELE_1", 
-        "ALLELE_1_FREQ", "N", "NGROUPS"
+        "ALLELE_1_FREQ", "ALLELE_1_FREQ_STD", "ALLELE_1_FREQ_MIN",
+        "ALLELE_1_FREQ_MAX",
+        "N", "NGROUPS"
     ])
     # Check SEVERE_COVID_19
     meta_covid_19 = CSV.read(joinpath(tmpdir, "gwas.meta_analysis.SEVERE_COVID_19.gwas.tsv"), DataFrame)
     @test Set(names(meta_covid_19)) == expected_cols
-    @test all(meta_covid_19.NGROUPS .== 1)
+    @test meta_covid_19[meta_covid_19.DIRECTION .== "0", :NGROUPS] == [0]
+    @test all(meta_covid_19[meta_covid_19.DIRECTION .!= "0", :NGROUPS] .== 1)
+    @test all(meta_covid_19.ALLELE_1_FREQ_MIN .> maf)
+    @test all(meta_covid_19.ALLELE_1_FREQ_MAX .< 1 - maf)
     # Check SEVERE_PNEUMONIA
     meta_pneumonia = CSV.read(joinpath(tmpdir, "gwas.meta_analysis.SEVERE_PNEUMONIA.gwas.tsv"), DataFrame)
     @test Set(names(meta_pneumonia)) == expected_cols
     meta_pneumonia[meta_pneumonia.ID .== "chr1:14012312:T:C", :NGROUPS] == [1]
     @test all(meta_pneumonia.NGROUPS .<= 2)
+    @test all(meta_pneumonia.ALLELE_1_FREQ_MIN .> maf)
+    @test all(meta_pneumonia.ALLELE_1_FREQ_MAX .< 1 - maf)
     # Check plots have been created
     @test isfile(string(output_prefix, ".SEVERE_COVID_19.manhattan.png"))
     @test isfile(string(output_prefix, ".SEVERE_COVID_19.qq.png"))
