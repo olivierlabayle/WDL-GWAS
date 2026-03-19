@@ -169,8 +169,10 @@ function make_finemapping_plots(finemapping_results, gwas_results; output_prefix
             DataFrames.select(locus_group, [:ID, :REF, :ALT, :PIP, :CS, :LOCUS_ID, :UNPHASED_R2, :SUSIE_CONVERGED]), 
             on=[:ID]
         )
-        fig = region_plot(region_data)
-        save(string(output_prefix, ".", replace(locus_key.LOCUS_ID, ":" => "_"), ".locuszoom.png"), fig)
+        if count(.!ismissing.(region_data.PIP)) > 0
+            fig = region_plot(region_data)
+            save(string(output_prefix, ".", replace(locus_key.LOCUS_ID, ":" => "_"), ".locuszoom.png"), fig)
+        end
     end
 end
 
