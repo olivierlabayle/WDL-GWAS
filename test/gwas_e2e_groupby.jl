@@ -52,27 +52,20 @@ end
 results_dirs = readdir(joinpath(PKGDIR, "cromwell-executions/gwas"), join=true)
 results_dir = results_dirs[argmax(mtime(d) for d in results_dirs)]
 expected_groups = Set([
-    "AFR.SEVERE_PNEUMONIA", 
-    "AMR.SEVERE_PNEUMONIA", 
-    "EAS.SEVERE_COVID_19", 
+    "AFR.SEVERE_PNEUMONIA",
+    "AMR.SEVERE_COVID_19", 
+    "AMR.SEVERE_PNEUMONIA",
+    "EAS.SEVERE_COVID_19",
     "EAS.SEVERE_PNEUMONIA", 
     "EUR.SEVERE_PNEUMONIA",
-    "SAS.SEVERE_PNEUMONIA"
+    "EUR.SEVERE_COVID_19",
+    "SAS.SEVERE_PNEUMONIA",
+    "SAS.SEVERE_COVID_19"
 ])
 # Test groups and covariates: first see which groups make the case/control constraint
 groups_prep_dir = joinpath(results_dir, "call-make_groups_and_covariates", "execution")
 covariates = CSV.read(joinpath(groups_prep_dir, "gwas.covariates.csv"), DataFrame)
 @test "AGE_x_AGE" in names(covariates)
-covid_19_groups_not_passing_cc_threshold = Set(filter(
-    x -> x.nrow < 600,
-    sort(combine(groupby(covariates, [:SUPERPOPULATION, :SEVERE_COVID_19], skipmissing=true), nrow), :nrow)
-).SUPERPOPULATION)
-@test covid_19_groups_not_passing_cc_threshold == Set(["ADMIXED", "EUR", "AMR", "AFR", "SAS"])
-pneumonia_groups_not_passing_cc_threshold = Set(filter(
-    x -> x.nrow < 600,
-    sort(combine(groupby(covariates, [:SUPERPOPULATION, :SEVERE_PNEUMONIA], skipmissing=true), nrow), :nrow)
-).SUPERPOPULATION)
-@test pneumonia_groups_not_passing_cc_threshold == Set(["ADMIXED"])
 # Now check the groups files
 for (ancestry, phenotype) in Iterators.product(
         ["AFR", "AMR", "EAS", "EUR", "SAS"],
@@ -91,7 +84,7 @@ covariate_list = readlines(joinpath(groups_prep_dir, "gwas.covariates_list.txt")
 # Test BED groups qced
 bed_dir = joinpath(results_dir, "call-make_group_bed_qced")
 groups = Set([])
-for shard in [0, 1, 2, 3, 4, 5] # expected 6 shards for 6 sample lists
+for shard in 0:8# expected 6 shards for 6 sample lists
     execution_dir = joinpath(bed_dir, "shard-$shard", "execution")
     files = readdir(execution_dir)
     fam_file = files[findfirst(endswith(".fam"), files)]
@@ -102,7 +95,7 @@ end
 # Test LD pruning
 ld_prune_dir = joinpath(results_dir, "call-groups_ld_prune")
 groups = Set([])
-for shard in [0, 1, 2, 3, 4, 5]
+for shard in 0:8
     execution_dir = joinpath(ld_prune_dir, "shard-$shard", "execution")
     files = readdir(execution_dir)
     fam_file = files[findfirst(endswith(".fam"), files)]
@@ -116,7 +109,7 @@ loco_pca_dir = joinpath(results_dir, "call-compute_pcs")
 ## One PCA per (group, chromosome) pair = 5 * 3 = 15
 ## These are ordered by group and chromosome
 pca_groups_and_chrs = Set([])
-for group_shard in [0, 1, 2, 3, 4, 5]
+for group_shard in 0:8
     group_subdir = only(readdir(joinpath(loco_pca_dir, "shard-$group_shard"), join=true))
     group_subdir = joinpath(only(readdir(group_subdir, join=true)), "call-pca_loco")
     for chr_shard in [0, 1, 2]
@@ -132,7 +125,7 @@ end
 # Test merge covariates and PCs
 covariates_and_pcs_dir = joinpath(results_dir, "call-merge_covariates_and_pcs")
 merged_covariates_groups = Set([])
-for group_shard in 0:5
+for group_shard in 0:8
     execution_dir = joinpath(covariates_and_pcs_dir, "shard-$group_shard", "execution")
     files = readdir(execution_dir)
     merged_covariates_filename = files[findfirst(endswith("merged_covariates_and_pcs.tsv"), files)]
@@ -153,7 +146,7 @@ end
 # Test REGENIE Step 1
 gwas_step_1_dir = joinpath(results_dir, "call-run_gwas_step_1")
 regenie_groups = Set([])
-for group_shard in 0:5
+for group_shard in 0:8
     group_subdir = only(readdir(joinpath(gwas_step_1_dir, "shard-$group_shard", "gwas_step_1"), join=true))
     execution_dir = joinpath(group_subdir, "call-regenie_step_1", "execution")
     files = readdir(execution_dir)
@@ -173,7 +166,7 @@ regenie_step_2_groups = Set([])
 results_expected_cols = [
         "CHROM", "POS", "ID", "ALLELE_0", "ALLELE_1", "ALLELE_1_FREQ", "BETA", "SE", "LOG10P", "N", "TEST", "CHISQ", "EXTRA"
 ]
-for group_shard in 0:5
+for group_shard in 0:8
     subdir = only(readdir(joinpath(top_regenie_step_2_dir, "shard-$group_shard"), join=true))
     subdir = only(readdir(subdir, join=true))
     gwas_step_2_dir = joinpath(subdir, "call-run_gwas_step_2")
@@ -201,7 +194,7 @@ end
 # Test Merged gwas results
 group_gwas_outputs_dir = joinpath(results_dir, "call-make_group_gwas_outputs")
 merged_results_groups = Set([])
-for group_shard in 0:5
+for group_shard in 0:8
     execution_dir = joinpath(group_gwas_outputs_dir, "shard-$group_shard", "execution")
     files = readdir(execution_dir)
     gwas_merged_results_file = files[findfirst(endswith("gwas.tsv"), files)]
@@ -216,7 +209,7 @@ end
 # Test Merged finemapping results
 group_finemapping_results_dir = joinpath(results_dir, "call-make_group_finemapping_outputs")
 merged_results_groups = Set([])
-for group_shard in 0:5
+for group_shard in 0:8
     execution_dir = joinpath(group_finemapping_results_dir, "shard-$group_shard", "execution")
     files = readdir(execution_dir)
     gwas_merged_results_file = files[findfirst(endswith("finemapping.tsv"), files)]

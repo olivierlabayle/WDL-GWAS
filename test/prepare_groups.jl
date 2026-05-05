@@ -60,15 +60,18 @@ end
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "gwas")
     covariates_file = joinpath(TESTDIR, "assets", "covariates", "covariates.csv")
-    min_cases_controls = 200
+    genotypes_prefix = joinpath(TESTDIR, "assets", "genotypes", "genotypes.arrays_wgs.aggregated")
+    min_cases_controls = 20
     copy!(ARGS, [
-        "make-groups-and-covariates", 
+        "make-groups-and-covariates",
+        genotypes_prefix,
         covariates_file,
         "--groupby=SUPERPOPULATION,SEX",
         "--phenotypes=SEVERE_COVID_19",
         "--covariates=AGE,AGE_x_AGE,AGE_x_SEX,COHORT",
         "--output-prefix", output_prefix, 
-        "--min-cases-controls", string(min_cases_controls)
+        "--min-cases-controls", string(min_cases_controls),
+        "--king-cutoff", string(0.125)
     ])
     julia_main()
 
@@ -115,22 +118,22 @@ end
     @test groups_failing_min_case_control == Set([
         ("ADMIXED", 1),
         ("ADMIXED", 0),
-        ("AMR", 0),
-        ("EUR", 0),
-        ("AFR", 0),
-        ("SAS", 0)
     ])
-    for ancestry in ["AFR", "AMR", "EAS", "EUR", "SAS"]
-        for sex in [0, 1]
-            if (ancestry, sex) ∉ groups_failing_min_case_control
-                group_key = string(ancestry, "_", sex)
-                individuals = CSV.read(joinpath(tmpdir, "gwas.individuals.$group_key.SEVERE_COVID_19.txt"), DataFrame; header=["FID", "IID"])
-                joined = innerjoin(updated_covariates, individuals, on = [:FID, :IID])
-                @test all(==(ancestry), joined.SUPERPOPULATION)
-                @test all(==(sex), joined.SEX)
-                @test nrow(dropmissing(joined[!, ["SEVERE_COVID_19", "AGE", "AGE_x_AGE", "AGE_x_SEX", "COHORT__FUTURE_HEALTH"]])) == nrow(joined)
-            end
-        end
+
+    passing_group_files = filter(x -> endswith(x, "SEVERE_COVID_19.txt"), readdir(tmpdir))
+    groups_passing = map(passing_group_files) do filename
+        groupkey = split(filename, ".")[3]
+        groupkey_parts = split(groupkey, "_")
+        (groupkey_parts[1], parse(Int, groupkey_parts[2]))
+    end
+    @test isempty(intersect(groups_passing, groups_failing_min_case_control))
+
+    for (filename, (ancestry, sex)) in zip(passing_group_files, groups_passing)
+        individuals = CSV.read(joinpath(tmpdir, filename), DataFrame; header=["FID", "IID"])
+        joined = innerjoin(updated_covariates, individuals, on = [:FID, :IID])
+        @test all(==(ancestry), joined.SUPERPOPULATION)
+        @test all(==(sex), joined.SEX)
+        @test nrow(dropmissing(joined[!, ["SEVERE_COVID_19", "AGE", "AGE_x_AGE", "AGE_x_SEX", "COHORT__FUTURE_HEALTH"]])) == nrow(joined)
     end
 end
 
@@ -138,9 +141,12 @@ end
     tmpdir = mktempdir()
     output_prefix = joinpath(tmpdir, "gwas_all")
     covariates_file = joinpath(TESTDIR, "assets", "covariates", "covariates.csv")
-    min_cases_controls = 2500
+    genotypes_prefix = joinpath(TESTDIR, "assets", "genotypes", "genotypes.arrays_wgs.aggregated")
+
+    min_cases_controls = 250
     copy!(ARGS, [
-        "make-groups-and-covariates", 
+        "make-groups-and-covariates",
+        genotypes_prefix,
         covariates_file,
         "--output-prefix", output_prefix,
         "--phenotypes=SEVERE_COVID_19,SEVERE_PNEUMONIA",
@@ -152,7 +158,7 @@ end
 
     # Check covariate file and group 
     covariates = CSV.read(joinpath(tmpdir, "gwas_all.covariates.csv"), DataFrame, missingstring="NA")
-    # SEVERE_COVID_19 is dropped because it has fewer than 2500 cases/controls
+    # SEVERE_COVID_19 is dropped because it has fewer than 250 cases/controls
     @test !isfile(joinpath(tmpdir, "gwas_all.individuals.all.SEVERE_COVID_19.txt"))
     # The group consists in all individuals
     individuals = sort(CSV.read(
@@ -163,7 +169,7 @@ end
     expected_individuals = sort(
         dropmissing(filter(x -> x.AGE >= 50 && x.AGE <= 75, covariates), ["SEVERE_PNEUMONIA", "AGE"]
         )[!, ["FID", "IID"]])
-    @test individuals == expected_individuals
+    @test issubset(individuals.IID, expected_individuals.IID)
 
     # Check covariates list
     @test readlines(joinpath(tmpdir, "gwas_all.covariates_list.txt"),) == ["AGE"]

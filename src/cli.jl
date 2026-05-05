@@ -197,6 +197,11 @@ function cli_settings()
     end
 
     @add_arg_table! s["make-groups-and-covariates"] begin
+        "genotypes-prefix"
+            arg_type = String
+            required = true
+            help = "Prefix for the genotypes fileset (without .bed extension)."
+
         "covariates-file"
             arg_type = String
             required = true
@@ -231,6 +236,11 @@ function cli_settings()
             arg_type = Int
             help = "Minimum group size."
             default = 100
+
+        "--king-cutoff"
+            arg_type = Float64
+            help = "KING cutoff to use for relatedness filtering."
+            default = 0.0884
     end
 
     return s
@@ -243,12 +253,14 @@ function julia_main()::Cint
     cmd_settings = settings[cmd]
     if cmd == "make-groups-and-covariates"
         make_groups_and_covariates(
+            cmd_settings["genotypes-prefix"],
             cmd_settings["covariates-file"];
             groupby_string=cmd_settings["groupby"],
             covariates_string=cmd_settings["covariates"],
             phenotypes_string=cmd_settings["phenotypes"],
             output_prefix=cmd_settings["output-prefix"],
             min_cases_controls=cmd_settings["min-cases-controls"],
+            king_cutoff=cmd_settings["king-cutoff"],
             filters_string=cmd_settings["filters"]
         )
     elseif cmd == "merge-covariates-pcs"

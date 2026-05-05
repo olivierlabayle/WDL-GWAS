@@ -26,6 +26,7 @@ These options describe the general behaviour of the workflow.
   - A combination of the above, e.g., `filterby=[SUPERPOPULATION=AFR, AGE>70]`.
 - `covariates` (default: `[AGE, SEX, AGE_x_AGE, AGE_x_SEX]`): A list of covariates used to adjust for confounding or increase power in the association testing step. Product of variables can be defined using the `_x_` syntax, for example: `AGE_x_SEX`.
 - `min_cases_controls` (default: 10): For binary traits only, the minimum number of cases/controls within a group to proceed to the GWAS.
+- `king_cutoff` (default: 0.0884): Each group is filtered to retain only unrelated individuals up to the given threshold. The default threshold will remove 1st and 2nd-degree relatives (see [this thread](https://groups.google.com/g/plink2-users/c/BSxDwyZ65oc)).
 
 ## PCA Options
 

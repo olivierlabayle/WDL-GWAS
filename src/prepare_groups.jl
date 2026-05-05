@@ -74,31 +74,67 @@ function n_cases_controls(data_no_missing, phenotype)
     return ncases, ncontrols
 end
 
-function write_covariates_and_phenotypes_group(data, covariates_list; 
+function write_covariates_and_phenotypes_group(data, covariates_list, genotypes_prefix; 
     group_id="all", 
     phenotypes=["SEVERE_COVID_19"], 
     output_prefix="gwas", 
     min_cases_controls=100,
-    filters_string=nothing
+    filters_string=nothing,
+    king_cutoff=0.0884
     )
     data = apply_filters(data, filters_string)
     n_phenotypes_passed = 0
     for phenotype in phenotypes
+        # Missingness filtering for the phenotype and covariates
         data_no_missing = dropmissing(data, [phenotype, covariates_list...])
-        if is_binary_column(data_no_missing, phenotype)
-            ncases, ncontrols = n_cases_controls(data_no_missing, phenotype)
-            if ncontrols < min_cases_controls || ncases < min_cases_controls
-                @info "Skipping phenotype $phenotype for group $group_id because it has fewer than $min_cases_controls cases/controls: (cases: $(ncases), controls: $(ncontrols))."
-                continue
-            end
-        end
 
+        # Relatedness filtering
+        phenotype_prefix = string(output_prefix, ".individuals.", group_id, ".", phenotype)
+        temp_pheno_file = string(phenotype_prefix, ".temp.txt")
+        pheno_file = string(phenotype_prefix, ".txt")
         CSV.write(
-            string(output_prefix, ".individuals.", group_id, ".", phenotype, ".txt"), 
+            temp_pheno_file, 
             DataFrames.select(data_no_missing, ["FID", "IID"]), 
             header=false, 
             delim="\t"
         )
+        # Perform relatedness filtering with KING
+        plink2_io = IOBuffer()
+        try 
+            run(pipeline(
+                `plink2 --bfile $genotypes_prefix --keep $temp_pheno_file --king-cutoff $king_cutoff`, 
+                stderr=plink2_io
+            ))
+        catch
+            msg = String(take!(plink2_io))
+            println(msg)
+            if endswith(msg, "No samples remaining after main filters.\n") || endswith(msg, "Error: --king-cutoff requires at least 2 samples.\n")
+                @info "Skipping group $group_id and phenotype $phenotype because no samples remain after relatedness filtering with KING cutoff of $king_cutoff."
+                continue
+            else
+                rethrow()
+            end
+        else
+            run(pipeline(`tail -n +2 plink2.king.cutoff.in.id`, stdout=pheno_file))
+            rm("plink2.king.cutoff.in.id")
+            rm("plink2.king.cutoff.out.id")
+        finally
+            close(plink2_io)
+            rm(temp_pheno_file)
+        end
+
+        # Check counts if binary phenotype
+        if is_binary_column(data_no_missing, phenotype)
+            unrelated_individuals = CSV.read(pheno_file, DataFrame; header=[:FID, :IID])
+            data_unrelated_no_missing = innerjoin(data_no_missing, unrelated_individuals, on = [:FID, :IID])
+            ncases, ncontrols = n_cases_controls(data_unrelated_no_missing, phenotype)
+            if ncontrols < min_cases_controls || ncases < min_cases_controls
+                @info "Skipping phenotype $phenotype for group $group_id because it has fewer than $min_cases_controls cases/controls: (cases: $(ncases), controls: $(ncontrols))."
+                rm(pheno_file)
+                continue
+            end
+        end
+
         n_phenotypes_passed += 1
     end
 
@@ -117,13 +153,15 @@ function read_and_process_covariates(covariates_file;
 end
 
 function make_groups_and_covariates(
+    genotypes_prefix,
     covariates_file; 
     groupby_string=nothing,
     covariates_string="AGE",
     phenotypes_string="SEVERE_COVID_19",
     filters_string=nothing,
     output_prefix="gwas", 
-    min_cases_controls=100
+    min_cases_controls=100,
+    king_cutoff=0.0884
     )
     phenotypes = split(phenotypes_string, ",")
     # Define additional covariates
@@ -147,22 +185,24 @@ function make_groups_and_covariates(
         groupby_variables = split(groupby_string, ",")
         for (groupkey, group) in pairs(groupby(covariates, groupby_variables, skipmissing=true, sort=true))
             group_id = join(groupkey, "_")
-            n_phenotypes_passed = write_covariates_and_phenotypes_group(group, required_covariate_variables;
+            n_phenotypes_passed = write_covariates_and_phenotypes_group(group, required_covariate_variables, genotypes_prefix;
                 group_id=group_id,
                 phenotypes=phenotypes,
                 output_prefix=output_prefix,
                 min_cases_controls=min_cases_controls,
-                filters_string=filters_string
+                filters_string=filters_string,
+                king_cutoff=king_cutoff
             )
             n_groups_passed += n_phenotypes_passed
         end
     else
-        n_groups_passed = write_covariates_and_phenotypes_group(covariates, required_covariate_variables; 
+        n_groups_passed = write_covariates_and_phenotypes_group(covariates, required_covariate_variables, genotypes_prefix; 
                 group_id="all",
                 phenotypes=phenotypes, 
                 output_prefix=output_prefix, 
                 min_cases_controls=min_cases_controls,
-                filters_string=filters_string
+                filters_string=filters_string,
+                king_cutoff=king_cutoff
         )
     end
 

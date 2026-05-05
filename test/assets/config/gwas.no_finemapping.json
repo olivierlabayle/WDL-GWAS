@@ -7,7 +7,8 @@
     "gwas.covariates_file": "test/assets/covariates/covariates.csv",
     "gwas.covariates": ["COHORT"],
     "gwas.phenotypes": ["SEVERE_COVID_19", "AGE"],
-    "gwas.min_cases_controls": "600",
+    "gwas.min_cases_controls": "500",
+    "gwas.king_cutoff": "0.45",
     "gwas.approx_pca": "false",
     "gwas.genotypes": {
         "chr": "all",

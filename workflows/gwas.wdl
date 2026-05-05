@@ -19,6 +19,7 @@ workflow gwas {
         String julia_use_sysimage = "true"
         String julia_threads = "auto"
         # QC parameters
+        String king_cutoff = "0.0884"
         String min_cases_controls = "10"
         String npcs = "10"
         String approx_pca = "true"
@@ -61,12 +62,16 @@ workflow gwas {
     call make_groups_and_covariates {
         input:
             docker_image=docker_image,
+            genotypes_bed = genotypes.bed,
+            genotypes_bim = genotypes.bim,
+            genotypes_fam = genotypes.fam,
             covariates_file=covariates_file,
             groupby=groupby,
             filters=filterby,
             covariates=covariates,
             phenotypes_list=phenotypes,
             min_cases_controls=min_cases_controls,
+            king_cutoff=king_cutoff,
             julia_cmd=get_julia_cmd.julia_cmd
     }
 
@@ -538,16 +543,22 @@ task merge_covariates_and_pcs {
 task make_groups_and_covariates {
     input {
         String docker_image
+        File genotypes_bed
+        File genotypes_bim
+        File genotypes_fam
         File covariates_file
         Array[String] groupby = []
         Array[String] filters = []
         Array[String] covariates = ["SEX", "AGE"]
         Array[String] phenotypes_list = ["SEVERE_COVID_19"]
         String min_cases_controls = "10"
+        String king_cutoff = "0.0884"
         String julia_cmd
     }
 
     command <<<
+        genotypes_prefix=$(dirname "~{genotypes_bed}")/$(basename "~{genotypes_bed}" .bed)
+
         groupby_string='~{sep="," groupby}'
         groupby_string_opt=""
         if [[ -n "${groupby_string}" ]]; then
@@ -564,11 +575,13 @@ task make_groups_and_covariates {
 
         ~{julia_cmd} \
             make-groups-and-covariates \
+            ${genotypes_prefix} \
             ~{covariates_file} \
             --covariates=${covariates_string} \
             --phenotypes=~{sep="," phenotypes_list} \
             --output-prefix=gwas \
-            --min-cases-controls=~{min_cases_controls} ${groupby_string_opt} ${filters_string_opt}
+            --min-cases-controls=~{min_cases_controls} ${groupby_string_opt} ${filters_string_opt} \
+            --king-cutoff ~{king_cutoff}
     >>>
 
     output {
