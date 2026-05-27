@@ -71,7 +71,8 @@ end
         "--covariates=AGE,AGE_x_AGE,AGE_x_SEX,COHORT",
         "--output-prefix", output_prefix, 
         "--min-cases-controls", string(min_cases_controls),
-        "--king-cutoff", string(0.125)
+        "--king-cutoff", string(0.125),
+        "--split-categorical-covariates"
     ])
     julia_main()
 
@@ -151,7 +152,7 @@ end
         "--output-prefix", output_prefix,
         "--phenotypes=SEVERE_COVID_19,SEVERE_PNEUMONIA",
         "--filters=AGE>=50,AGE<=75",
-        "--covariates=AGE",
+        "--covariates=AGE,COHORT",
         "--min-cases-controls", string(min_cases_controls)
     ])
     julia_main()
@@ -172,7 +173,10 @@ end
     @test issubset(individuals.IID, expected_individuals.IID)
 
     # Check covariates list
-    @test readlines(joinpath(tmpdir, "gwas_all.covariates_list.txt"),) == ["AGE"]
+    @test readlines(joinpath(tmpdir, "gwas_all.covariates_list.txt"),) == ["AGE","COHORT"]
+
+    # Check cohort covariate was not split into dummy variables
+    @test filter(startswith("COHORT"), names(covariates)) == ["COHORT"]
 end
 
 

@@ -1,10 +1,10 @@
-function add_user_defined_covariates!(covariates, covariates_string)
+function add_user_defined_covariates!(covariates, covariates_string; split_categorical_covariates=true)
     required_covariate_variables = split(covariates_string, ",")
     all_colnames = names(covariates)
     updated_required_covariate_variables = []
     for variable in required_covariate_variables
         if variable ∈ all_colnames
-            if eltype(covariates[!, variable]) <: AbstractString
+            if eltype(covariates[!, variable]) <: AbstractString && split_categorical_covariates
                 covariates[!, variable] = categorical(covariates[!, variable])
                 mach = machine(OneHotEncoder(drop_last=true), covariates[!, [variable]]) ## Need to drop last to avoid multicolinearity in GWAS
                 fit!(mach, verbosity=0)
@@ -80,7 +80,7 @@ function write_covariates_and_phenotypes_group(data, covariates_list, genotypes_
     output_prefix="gwas", 
     min_cases_controls=100,
     filters_string=nothing,
-    king_cutoff=0.0884
+    king_cutoff=0.0884,
     )
     data = apply_filters(data, filters_string)
     n_phenotypes_passed = 0
@@ -142,12 +142,13 @@ function write_covariates_and_phenotypes_group(data, covariates_list, genotypes_
 end
 
 function read_and_process_covariates(covariates_file;
-    covariates_string=nothing
+    covariates_string=nothing,
+    split_categorical_covariates=true
     )
     # Read the covariates file
     covariates = CSV.read(covariates_file, DataFrame; missingstring=["", "NA", "NULL", "NAN"])
     # Add user defined covariates
-    required_covariate_variables = add_user_defined_covariates!(covariates, covariates_string)
+    required_covariate_variables = add_user_defined_covariates!(covariates, covariates_string; split_categorical_covariates=split_categorical_covariates)
 
     return covariates, required_covariate_variables
 end
@@ -161,11 +162,12 @@ function make_groups_and_covariates(
     filters_string=nothing,
     output_prefix="gwas", 
     min_cases_controls=100,
-    king_cutoff=0.0884
+    king_cutoff=0.0884,
+    split_categorical_covariates=true
     )
     phenotypes = split(phenotypes_string, ",")
     # Define additional covariates
-    covariates, required_covariate_variables = read_and_process_covariates(covariates_file; covariates_string=covariates_string)
+    covariates, required_covariate_variables = read_and_process_covariates(covariates_file; covariates_string=covariates_string, split_categorical_covariates=split_categorical_covariates)
     # Write new covariates to file
     CSV.write(
         string(output_prefix, ".covariates.csv"), 

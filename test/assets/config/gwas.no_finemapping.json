@@ -6,6 +6,7 @@
     "gwas.julia_use_sysimage": "false",
     "gwas.covariates_file": "test/assets/covariates/covariates.csv",
     "gwas.covariates": ["COHORT"],
+    "gwas.split_categorical_covariates": "false",
     "gwas.phenotypes": ["SEVERE_COVID_19", "AGE"],
     "gwas.min_cases_controls": "500",
     "gwas.king_cutoff": "0.45",

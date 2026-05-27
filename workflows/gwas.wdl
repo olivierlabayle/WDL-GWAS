@@ -19,6 +19,7 @@ workflow gwas {
         String julia_use_sysimage = "true"
         String julia_threads = "auto"
         # QC parameters
+        String split_categorical_covariates = "true"
         String king_cutoff = "0.0884"
         String min_cases_controls = "10"
         String npcs = "10"
@@ -72,6 +73,7 @@ workflow gwas {
             phenotypes_list=phenotypes,
             min_cases_controls=min_cases_controls,
             king_cutoff=king_cutoff,
+            split_categorical_covariates=split_categorical_covariates,
             julia_cmd=get_julia_cmd.julia_cmd
     }
 
@@ -553,6 +555,7 @@ task make_groups_and_covariates {
         Array[String] phenotypes_list = ["SEVERE_COVID_19"]
         String min_cases_controls = "10"
         String king_cutoff = "0.0884"
+        String split_categorical_covariates = "true"
         String julia_cmd
     }
 
@@ -571,6 +574,11 @@ task make_groups_and_covariates {
             filters_string_opt="--filters=${filters_string}"
         fi
 
+        split_cov_opt=""
+        if [[ "~{split_categorical_covariates}" == "true" ]]; then
+            split_cov_opt="--split-categorical-covariates"
+        fi
+
         covariates_string='~{sep="," covariates}'
 
         ~{julia_cmd} \
@@ -581,7 +589,7 @@ task make_groups_and_covariates {
             --phenotypes=~{sep="," phenotypes_list} \
             --output-prefix=gwas \
             --min-cases-controls=~{min_cases_controls} ${groupby_string_opt} ${filters_string_opt} \
-            --king-cutoff ~{king_cutoff}
+            --king-cutoff ~{king_cutoff} ${split_cov_opt}
     >>>
 
     output {

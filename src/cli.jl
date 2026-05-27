@@ -241,6 +241,10 @@ function cli_settings()
             arg_type = Float64
             help = "KING cutoff to use for relatedness filtering."
             default = 0.0884
+
+        "--split-categorical-covariates"
+            help = "Whether to split categorical covariates into dummy variables."
+            action = :store_true
     end
 
     return s
@@ -261,7 +265,8 @@ function julia_main()::Cint
             output_prefix=cmd_settings["output-prefix"],
             min_cases_controls=cmd_settings["min-cases-controls"],
             king_cutoff=cmd_settings["king-cutoff"],
-            filters_string=cmd_settings["filters"]
+            filters_string=cmd_settings["filters"],
+            split_categorical_covariates=cmd_settings["split-categorical-covariates"]
         )
     elseif cmd == "merge-covariates-pcs"
         merge_covariates_and_pcs(
