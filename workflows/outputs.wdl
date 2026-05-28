@@ -28,6 +28,9 @@ task make_gwas_outputs {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x8"
+        cpu: "8"
+        memory: "32G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -59,5 +62,8 @@ task make_finemapping_outputs {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x8"
+        cpu: "8"
+        memory: "32G"
+        disks: "local-disk 100 SSD"
     }
 }

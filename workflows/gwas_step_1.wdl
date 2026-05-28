@@ -99,6 +99,9 @@ task saige_step_1 {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x16"
+        cpu: "16"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -176,6 +179,9 @@ task regenie_step_1 {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x16"
+        cpu: "16"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
 

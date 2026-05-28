@@ -355,6 +355,9 @@ task ld_prune {
     runtime {
         docker: docker_image
         dx_instance_type: "mem1_ssd1_v2_x8"
+        cpu: "8"
+        memory: "32G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -389,6 +392,9 @@ task meta_analyse {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x8"
+        cpu: "8"
+        memory: "32G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -448,6 +454,9 @@ task finemapping_summary_stats {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x16"
+        cpu: "8"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -506,6 +515,9 @@ task finemapping {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x16"
+        cpu: "8"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -539,6 +551,9 @@ task merge_covariates_and_pcs {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x16"
+        cpu: "8"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -601,6 +616,9 @@ task make_groups_and_covariates {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x8"
+        cpu: "8"
+        memory: "32G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -642,5 +660,8 @@ task make_group_bed_qced {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x8"
+        cpu: "8"
+        memory: "32G"
+        disks: "local-disk 100 SSD"
     }
 }
