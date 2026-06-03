@@ -21,13 +21,10 @@ task plink2_gwas {
         }
 
     String chr_out = if (loco_pca == "false") then "0" else "~{chr}"
+    String phenotype = sub(group_name, "^([^.]+.)", "")
 
     command <<<
         input_prefix=$(dirname "~{pgen_file}")/$(basename "~{pgen_file}" .pgen)
-
-        # phenotype from group_name
-        phenotype=$(echo ~{group_name} | cut -d'.' -f2)
-        echo $phenotype > phenotype.txt
 
         plink2 \
             --pfile ${input_prefix} \
@@ -46,7 +43,7 @@ task plink2_gwas {
         plink2 \
             --pfile ${input_prefix}.biallelic \
             --pheno ~{covariates_file} \
-            --pheno-name ${phenotype} \
+            --pheno-name ~{phenotype} \
             --covar ~{covariates_file} \
             --covar-name ${full_covariates_list} \
             --covar-variance-standardize \
@@ -55,10 +52,10 @@ task plink2_gwas {
             --glm hide-covar log10 \
             --out gwas_output
 
-        if [[ -f "gwas_output.${phenotype}.glm.linear" ]]; then
-            gwas_file="gwas_output.${phenotype}.glm.linear"
-        elif [[ -f "gwas_output.${phenotype}.glm.logistic.hybrid" ]]; then
-            gwas_file="gwas_output.${phenotype}.glm.logistic.hybrid"
+        if [[ -f "gwas_output.~{phenotype}.glm.linear" ]]; then
+            gwas_file="gwas_output.~{phenotype}.glm.linear"
+        elif [[ -f "gwas_output.~{phenotype}.glm.logistic.hybrid" ]]; then
+            gwas_file="gwas_output.~{phenotype}.glm.logistic.hybrid"
         else
             echo "Error: no GWAS output found. Plink2 must have errored or the GWAS mode is not supported." >&2
             exit 1
@@ -67,11 +64,11 @@ task plink2_gwas {
         ~{julia_cmd} harmonize-gwas-results \
             ${gwas_file} \
             --source-software=plink2 \
-            --output="~{group_name}.chr~{chr}_${phenotype}.tsv"
+            --output="~{group_name}.chr~{chr}_~{phenotype}.tsv"
     >>>
 
     output {
-        File summary_stats = "${group_name}.chr${chr}_" + read_string("phenotype.txt") + ".tsv"
+        File summary_stats = "${group_name}.chr${chr}_~{phenotype}.tsv"
     }
 
     runtime {
@@ -99,12 +96,10 @@ task saige_step_2 {
         String mac = "10"
     }
 
+    String phenotype = sub(group_name, "^([^.]+.)", "")
+
     command <<<
         input_prefix=$(dirname "~{pgen_file}")/$(basename "~{pgen_file}" .pgen)
-
-        # phenotype from group_name
-        phenotype=$(echo ~{group_name} | cut -d'.' -f2)
-        echo $phenotype > phenotype.txt
 
         plink2 \
             --pfile ${input_prefix} \
@@ -127,16 +122,16 @@ task saige_step_2 {
             --pCutoffforFirth=0.05 \
             --is_output_moreDetails=TRUE \
             --LOCO=TRUE \
-            --SAIGEOutputFile=~{group_name}.chr~{chr}_${phenotype}.txt
+            --SAIGEOutputFile=~{group_name}.chr~{chr}_~{phenotype}.txt
 
         ~{julia_cmd} harmonize-gwas-results \
-            "~{group_name}.chr~{chr}_${phenotype}.txt" \
+            "~{group_name}.chr~{chr}_~{phenotype}.txt" \
             --source-software=saige \
-            --output="~{group_name}.chr~{chr}_${phenotype}.tsv"
+            --output="~{group_name}.chr~{chr}_~{phenotype}.tsv"
     >>>
 
     output {
-        File summary_stats = "${group_name}.chr${chr}_" + read_string("phenotype.txt") + ".tsv"
+        File summary_stats = "${group_name}.chr${chr}_~{phenotype}.tsv"
     }
 
     runtime {
@@ -169,6 +164,7 @@ task regenie_step_2 {
     }
     
     String chr_out = if (loco_pca == "false") then "0" else "~{chr}"
+    String phenotype = sub(group_name, "^([^.]+.)", "")
 
     command <<<
 
@@ -192,12 +188,8 @@ task regenie_step_2 {
         pc_list=$(printf "CHR~{chr_out}_OUT_PC%s," {1..~{npcs}} | sed 's/,$//')
         full_covariates_list="~{sep="," covariates_list},${pc_list}"
 
-        # phenotype from group_name
-        phenotype=$(echo ~{group_name} | cut -d'.' -f2)
-        echo $phenotype > phenotype.txt
-
         # Find the type of the phenotype (quantitative or binary)
-        phenotype_col_idx=$(head -1 ~{covariates_file} | tr '\t' '\n' | grep -n ${phenotype} | cut -d: -f1)
+        phenotype_col_idx=$(head -1 ~{covariates_file} | tr '\t' '\n' | grep -n ~{phenotype} | cut -d: -f1)
         uniq_vals_count=$(cut -f"${phenotype_col_idx}" ~{covariates_file} | sort -u | grep -v "NA" | wc -l)
         trait_type="--bt"
         if [ "${uniq_vals_count}" -gt 3 ]; then # two binary values + header
@@ -209,7 +201,7 @@ task regenie_step_2 {
             --pgen ${input_prefix}.biallelic_frequent \
             --keep ~{sample_list} \
             --phenoFile ~{covariates_file} \
-            --phenoColList ${phenotype} \
+            --phenoColList ~{phenotype} \
             --write-samples \
             --covarFile ~{covariates_file} \
             --covarColList ${full_covariates_list} \
@@ -221,9 +213,9 @@ task regenie_step_2 {
             --out ~{group_name}.chr~{chr}
 
         ~{julia_cmd} harmonize-gwas-results \
-            "~{group_name}.chr~{chr}_${phenotype}.regenie" \
+            "~{group_name}.chr~{chr}_~{phenotype}.regenie" \
             --source-software=regenie \
-            --output="~{group_name}.chr~{chr}_${phenotype}.tsv"
+            --output="~{group_name}.chr~{chr}_~{phenotype}.tsv"
     >>>
 
     output {

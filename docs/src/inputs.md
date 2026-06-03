@@ -19,7 +19,7 @@ These arguments must be provided or the workflow will not run.
 
 These options describe the general behaviour of the workflow.
 
-- `groupby` (default: []): A list of variables used to stratify individuals. If empty, the full dataset is used.
+- `groupby` (default: []): A list of variables used to stratify individuals. If empty, the full dataset is used. Variable names should not contain a `.`.
 - `filterby` (default: []): A list of conditions on covariates present in the dataset to filter individuals. At the moment this can either be in the format:
   - `COLUMN=value`: which can be used to filter for individuals with categorical traits, e.g., `SUPERPOPULATION=AFR` if the `covariates_file` has a `SUPERPOPULATION` column.
   - `COLUMN>value`: which can be used to filter individuals with continuous variables, e.g., `AGE>70`. Any of `<`, `>`, `=`, `<=`, `>=` is a valid operator.
