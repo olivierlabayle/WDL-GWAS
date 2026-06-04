@@ -74,6 +74,66 @@ function n_cases_controls(data_no_missing, phenotype)
     return ncases, ncontrols
 end
 
+function write_covariates_and_phenotype_group(data, phenotype, covariates_list, genotypes_prefix;
+    group_id="all",
+    output_prefix="gwas",
+    min_cases_controls=100,
+    king_cutoff=0.0884
+    )
+    tmpdir = mktempdir()
+
+    data_no_missing = dropmissing(data, [phenotype, covariates_list...])
+
+    # Relatedness filtering
+    temp_pheno_file = joinpath(tmpdir, string("individuals.", group_id, ".", phenotype, ".txt"))
+    plink2_out_prefix = joinpath(tmpdir, string("plink2.", group_id, ".", phenotype))
+    pheno_file = string(output_prefix, ".individuals.", group_id, ".", phenotype, ".txt")
+    CSV.write(
+        temp_pheno_file, 
+        DataFrames.select(data_no_missing, ["FID", "IID"]), 
+        header=false, 
+        delim="\t"
+    )
+    plink2_io = IOBuffer()
+    try 
+        run(pipeline(
+            `plink2 --bfile $genotypes_prefix --keep $temp_pheno_file --king-cutoff $king_cutoff --out $plink2_out_prefix`, 
+            stderr=plink2_io
+        ))
+    catch
+        msg = String(take!(plink2_io))
+        println(msg)
+        if endswith(msg, "No samples remaining after main filters.\n") || endswith(msg, "Error: --king-cutoff requires at least 2 samples.\n")
+            @info "Skipping group $group_id and phenotype $phenotype because no samples remain after relatedness filtering with KING cutoff of $king_cutoff."
+            rm(tmpdir, recursive=true)
+            return 0
+        else
+            rethrow()
+        end
+    else
+        run(pipeline(`tail -n +2 $plink2_out_prefix.king.cutoff.in.id`, stdout=pheno_file))
+    finally
+        close(plink2_io)
+    end
+
+    # Check counts if binary phenotype
+    if is_binary_column(data_no_missing, phenotype)
+        unrelated_individuals = CSV.read(pheno_file, DataFrame; header=[:FID, :IID])
+        data_unrelated_no_missing = innerjoin(data_no_missing, unrelated_individuals, on = [:FID, :IID])
+        ncases, ncontrols = n_cases_controls(data_unrelated_no_missing, phenotype)
+        if ncontrols < min_cases_controls || ncases < min_cases_controls
+            @info "Skipping phenotype $phenotype for group $group_id because it has fewer than $min_cases_controls cases/controls: (cases: $(ncases), controls: $(ncontrols))."
+            rm(tmpdir, recursive=true)
+            rm(pheno_file)
+            return 0
+        end
+    end
+
+    rm(tmpdir, recursive=true)
+
+    return 1
+end
+
 function write_covariates_and_phenotypes_group(data, covariates_list, genotypes_prefix; 
     group_id="all", 
     phenotypes=["SEVERE_COVID_19"], 
@@ -83,62 +143,19 @@ function write_covariates_and_phenotypes_group(data, covariates_list, genotypes_
     king_cutoff=0.0884,
     )
     data = apply_filters(data, filters_string)
-    n_phenotypes_passed = 0
+    n_phenotypes_passed = Threads.Atomic{Int}(0)
     for phenotype in phenotypes
         # Missingness filtering for the phenotype and covariates
-        data_no_missing = dropmissing(data, [phenotype, covariates_list...])
-
-        # Relatedness filtering
-        phenotype_prefix = string(output_prefix, ".individuals.", group_id, ".", phenotype)
-        temp_pheno_file = string(phenotype_prefix, ".temp.txt")
-        pheno_file = string(phenotype_prefix, ".txt")
-        CSV.write(
-            temp_pheno_file, 
-            DataFrames.select(data_no_missing, ["FID", "IID"]), 
-            header=false, 
-            delim="\t"
+        success = write_covariates_and_phenotype_group(data, phenotype, covariates_list, genotypes_prefix;
+            group_id=group_id,
+            output_prefix=output_prefix,
+            min_cases_controls=min_cases_controls,
+            king_cutoff=king_cutoff
         )
-        # Perform relatedness filtering with KING
-        plink2_io = IOBuffer()
-        try 
-            run(pipeline(
-                `plink2 --bfile $genotypes_prefix --keep $temp_pheno_file --king-cutoff $king_cutoff`, 
-                stderr=plink2_io
-            ))
-        catch
-            msg = String(take!(plink2_io))
-            println(msg)
-            if endswith(msg, "No samples remaining after main filters.\n") || endswith(msg, "Error: --king-cutoff requires at least 2 samples.\n")
-                @info "Skipping group $group_id and phenotype $phenotype because no samples remain after relatedness filtering with KING cutoff of $king_cutoff."
-                continue
-            else
-                rethrow()
-            end
-        else
-            run(pipeline(`tail -n +2 plink2.king.cutoff.in.id`, stdout=pheno_file))
-            rm("plink2.king.cutoff.in.id")
-            rm("plink2.king.cutoff.out.id")
-        finally
-            close(plink2_io)
-            rm(temp_pheno_file)
-        end
-
-        # Check counts if binary phenotype
-        if is_binary_column(data_no_missing, phenotype)
-            unrelated_individuals = CSV.read(pheno_file, DataFrame; header=[:FID, :IID])
-            data_unrelated_no_missing = innerjoin(data_no_missing, unrelated_individuals, on = [:FID, :IID])
-            ncases, ncontrols = n_cases_controls(data_unrelated_no_missing, phenotype)
-            if ncontrols < min_cases_controls || ncases < min_cases_controls
-                @info "Skipping phenotype $phenotype for group $group_id because it has fewer than $min_cases_controls cases/controls: (cases: $(ncases), controls: $(ncontrols))."
-                rm(pheno_file)
-                continue
-            end
-        end
-
-        n_phenotypes_passed += 1
+        Threads.atomic_add!(n_phenotypes_passed, success)
     end
 
-    return n_phenotypes_passed
+    return n_phenotypes_passed[]
 end
 
 function read_and_process_covariates(covariates_file;
@@ -182,23 +199,25 @@ function make_groups_and_covariates(
         end
     end
     # Make groups
-    n_groups_passed = 0
+    n_groups_passed = Threads.Atomic{Int}(0)
     if groupby_string !== nothing
         groupby_variables = split(groupby_string, ",")
-        for (groupkey, group) in pairs(groupby(covariates, groupby_variables, skipmissing=true, sort=true))
-            group_id = join(groupkey, "_")
+        groups = collect(pairs(groupby(covariates, groupby_variables, skipmissing=true, sort=true)))
+        Threads.@threads for group_id in eachindex(groups)
+            groupkey, group = groups[group_id]
+            group_name = join(groupkey, "_")
             n_phenotypes_passed = write_covariates_and_phenotypes_group(group, required_covariate_variables, genotypes_prefix;
-                group_id=group_id,
+                group_id=group_name,
                 phenotypes=phenotypes,
                 output_prefix=output_prefix,
                 min_cases_controls=min_cases_controls,
                 filters_string=filters_string,
                 king_cutoff=king_cutoff
             )
-            n_groups_passed += n_phenotypes_passed
+            Threads.atomic_add!(n_groups_passed, n_phenotypes_passed)
         end
     else
-        n_groups_passed = write_covariates_and_phenotypes_group(covariates, required_covariate_variables, genotypes_prefix; 
+        n_phenotypes_passed = write_covariates_and_phenotypes_group(covariates, required_covariate_variables, genotypes_prefix; 
                 group_id="all",
                 phenotypes=phenotypes, 
                 output_prefix=output_prefix, 
@@ -206,9 +225,10 @@ function make_groups_and_covariates(
                 filters_string=filters_string,
                 king_cutoff=king_cutoff
         )
+        Threads.atomic_add!(n_groups_passed, n_phenotypes_passed)
     end
 
-    n_groups_passed > 0 || throw(ArgumentError("No group passed the min cases/controls threshold."))
+    n_groups_passed[] > 0 || throw(ArgumentError("No group passed the min cases/controls threshold."))
 
     return 0
 end
