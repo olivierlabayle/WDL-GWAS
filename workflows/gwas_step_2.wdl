@@ -219,7 +219,7 @@ task regenie_step_2 {
     >>>
 
     output {
-        File summary_stats = "${group_name}.chr${chr}_" + read_string("phenotype.txt") + ".tsv"
+        File summary_stats = "${group_name}.chr${chr}_~{phenotype}.tsv"
     }
 
     runtime {
