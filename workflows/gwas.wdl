@@ -616,8 +616,8 @@ task make_groups_and_covariates {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x8"
-        cpu: "16"
-        memory: "32G"
+        cpu: "8"
+        memory: "64G"
         disks: "local-disk 100 SSD"
     }
 }

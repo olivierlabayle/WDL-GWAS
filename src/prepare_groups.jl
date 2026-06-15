@@ -97,7 +97,7 @@ function write_covariates_and_phenotype_group(data, phenotype, covariates_list, 
     plink2_io = IOBuffer()
     try 
         run(pipeline(
-            `plink2 --bfile $genotypes_prefix --keep $temp_pheno_file --king-cutoff $king_cutoff --out $plink2_out_prefix`, 
+            `plink2 --bfile $genotypes_prefix --keep $temp_pheno_file --king-cutoff $king_cutoff --memory 6000 --out $plink2_out_prefix`, 
             stderr=plink2_io
         ))
     catch
