@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as follows."
+title: "WDL-GWAS"
+type: software
+
+authors:
+  - family-names: "Labayle"
+    given-names: "Olivier"
+    orcid: "https://orcid.org/0000-0002-3708-3706"
+
+abstract: >
+  WDL-GWAS is a Workflow Description Language (WDL)
+  pipeline for reproducible genome-wide association studies (GWAS) onlarge scale biobank platforms.
+
+keywords:
+  - GWAS
+  - genome-wide association study
+  - WDL
+  - Workflow Description Language
+  - genomics
+  - bioinformatics
+  - population genetics
+  - reproducible research
+
+repository-code: "https://github.com/olivierlabayle/WDL-GWAS"
+url: "https://github.com/olivierlabayle/WDL-GWAS"
+
+license: "MIT"
+
+preferred-citation:
+  type: software
+  authors:
+    - family-names: "Labayle"
+      given-names: "Olivier"
+      orcid: "https://orcid.org/0000-0002-3708-3706"
+  title: "WDL-GWAS"
+  year: 2026
+  repository-code: "https://github.com/olivierlabayle/WDL-GWAS"
