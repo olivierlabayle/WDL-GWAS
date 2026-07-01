@@ -8,7 +8,7 @@ import "outputs.wdl"
 
 workflow gwas {
     input {
-        String docker_image = "olivierlabayle/wdl-gwas:optional_fp"
+        String docker_image = "olivierlabayle/wdl-gwas:main"
         File covariates_file
         PLINKFileset genotypes
         Array[PGENFileset]+ imputed_genotypes

@@ -26,7 +26,7 @@ struct PLINKFileset {
 workflow extract_ukb_genotypes {
     # Inputs
     input {
-        String docker_image = "olivierlabayle/wdl-gwas:optional_fp"
+        String docker_image = "olivierlabayle/wdl-gwas:main"
 
         Array[BGENFileset] bgen_filesets
 
