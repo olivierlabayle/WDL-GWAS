@@ -122,12 +122,9 @@ end
         end
     end
     output_prefix = joinpath(tmpdir, "results.all_chr")
-    copy!(ARGS, [
-        "merge-chr-results",
-        gwas_merge_list_file,
-        "--output-prefix", output_prefix
-    ])
-    julia_main()
+    
+    PopGen.merge_chr_results(gwas_merge_list_file; output_prefix=output_prefix)
+    
     gwas_results = CSV.read(output_prefix * ".tsv", DataFrame; delim="\t")
     expected_cols = [
         "CHROM", "POS", "ID", "ALLELE_0", "ALLELE_1", 

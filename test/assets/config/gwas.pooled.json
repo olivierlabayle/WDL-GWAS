@@ -7,6 +7,7 @@
     "gwas.covariates": ["SEX"],
     "gwas.phenotypes": ["AGE"],
     "gwas.approx_pca": "false",
+    "gwas.king_cutoff": "0.45",
     "gwas.genotypes": {
         "chr": "all",
         "bed": "test/assets/genotypes/genotypes.arrays_wgs.aggregated.bed",

@@ -15,7 +15,7 @@ function cli_settings()
             action = :command
             help = "Runs fine-mapping analysis."
 
-        "make-plots"
+        "make-finemapping-outputs"
             action = :command
             help = "Generates GWAS plots."
 
@@ -31,9 +31,9 @@ function cli_settings()
             action = :command
             help = "Merges covariates and PCs files."
 
-        "merge-chr-results"
+        "make-gwas-outputs"
             action = :command
-            help = "Merges REGENIE results from different chromosomes."
+            help = "Merges GWAS results from different chromosomes and create plots."
         
         "harmonize-gwas-results"
             action = :command
@@ -71,6 +71,11 @@ function cli_settings()
             arg_type = String
             help = "Meta-analysis method to use (fixed or random)."
             default = "STDERR"
+
+        "--maf"
+            arg_type = Float64
+            default  = 0.01
+            help     = "Minor allele frequencies for manhattan and QQ plots"
 
         "--output-prefix"
             arg_type = String
@@ -140,32 +145,33 @@ function cli_settings()
             default = ""
     end
 
-    @add_arg_table! s["merge-chr-results"] begin
+    @add_arg_table! s["make-gwas-outputs"] begin
         "merge-list"
             arg_type = String
             required = true
             help = "File containing list of files to be merged."
+
+        "--maf"
+            arg_type = Float64
+            default  = 0.01
+            help     = "Minor allele frequencies for manhattan and QQ plots"
+
         "--output-prefix"
             arg_type = String
             help = "Output path"
             default = "results.all_chr"
     end
 
-    @add_arg_table! s["make-plots"] begin
+    @add_arg_table! s["make-finemapping-outputs"] begin
+        "merge-list"
+            arg_type = String
+            required = true
+            help = "File containing list of files to be merged."
+
         "gwas-results"
             arg_type = String
             required = true
             help = "Path to GWAS results file."
-
-        "finemapping-results"
-            arg_type = String
-            required = true
-            help = "Path to finemapping results file."
-
-        "--maf"
-            arg_type = Float64
-            help = "Minor allele frequency threshold to filter results."
-            default = 0.01
         
         "--output-prefix"
             arg_type = String
@@ -191,6 +197,11 @@ function cli_settings()
     end
 
     @add_arg_table! s["make-groups-and-covariates"] begin
+        "genotypes-prefix"
+            arg_type = String
+            required = true
+            help = "Prefix for the genotypes fileset (without .bed extension)."
+
         "covariates-file"
             arg_type = String
             required = true
@@ -225,6 +236,15 @@ function cli_settings()
             arg_type = Int
             help = "Minimum group size."
             default = 100
+
+        "--king-cutoff"
+            arg_type = Float64
+            help = "KING cutoff to use for relatedness filtering."
+            default = 0.0884
+
+        "--split-categorical-covariates"
+            help = "Whether to split categorical covariates into dummy variables."
+            action = :store_true
     end
 
     return s
@@ -237,13 +257,16 @@ function julia_main()::Cint
     cmd_settings = settings[cmd]
     if cmd == "make-groups-and-covariates"
         make_groups_and_covariates(
+            cmd_settings["genotypes-prefix"],
             cmd_settings["covariates-file"];
             groupby_string=cmd_settings["groupby"],
             covariates_string=cmd_settings["covariates"],
             phenotypes_string=cmd_settings["phenotypes"],
             output_prefix=cmd_settings["output-prefix"],
             min_cases_controls=cmd_settings["min-cases-controls"],
-            filters_string=cmd_settings["filters"]
+            king_cutoff=cmd_settings["king-cutoff"],
+            filters_string=cmd_settings["filters"],
+            split_categorical_covariates=cmd_settings["split-categorical-covariates"]
         )
     elseif cmd == "merge-covariates-pcs"
         merge_covariates_and_pcs(
@@ -251,15 +274,14 @@ function julia_main()::Cint
             cmd_settings["pcs-prefix"];
             output=cmd_settings["output"]
         )
-    elseif cmd == "make-plots"
-        make_plots(
-            cmd_settings["gwas-results"],
-            cmd_settings["finemapping-results"];
-            maf=cmd_settings["maf"],
+    elseif cmd == "make-finemapping-outputs"
+        make_finemapping_outputs(
+            cmd_settings["merge-list"],
+            cmd_settings["gwas-results"];
             output_prefix=cmd_settings["output-prefix"]
         )
-    elseif cmd == "merge-chr-results"
-        merge_chr_results(
+    elseif cmd == "make-gwas-outputs"
+        make_gwas_outputs(
             cmd_settings["merge-list"];
             output_prefix=cmd_settings["output-prefix"]
         )
@@ -287,6 +309,7 @@ function julia_main()::Cint
             output_prefix=cmd_settings["output-prefix"],
             exclude_string=cmd_settings["exclude"],
             method=cmd_settings["method"],
+            maf=cmd_settings["maf"]
         )
     elseif cmd == "harmonize-gwas-results"
         harmonize_gwas_results(

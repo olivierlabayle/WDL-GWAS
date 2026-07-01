@@ -44,6 +44,9 @@ task pca {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x16"
+        cpu: "16"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
 

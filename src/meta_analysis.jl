@@ -5,17 +5,28 @@ function group_and_phenotype_from_regenie_filename(filename)
     ), ".")
 end
 
-function run_metal_across_phenotypes!(regenie_files; output_prefix="gwas.meta_analysis", method="STDERR")
+function split_marker_id(marker_id) 
+    chr, pos, all0, all1 = split(marker_id, ":")
+    chr = parse(Int, replace(chr, "chr" => ""))
+    pos = parse(Int, pos)
+    return chr, pos, all0, all1
+end
+
+function run_metal_across_phenotypes!(regenie_files; output_prefix="gwas.meta_analysis", method="STDERR", maf=0.01)
     tmp_dir = mktempdir()
     for (phenotype_key, group) in pairs(groupby(regenie_files, :PHENOTYPE))
         phenotype = phenotype_key.PHENOTYPE
         metal_script = """
         # === DESCRIBE THE COLUMNS IN THE INPUT FILES ===
+        CUSTOMVARIABLE TotalSampleSize
+        AVERAGEFREQ ON
+        MINMAXFREQ ON
         MARKER ID 
         GENOMICCONTROL ON
         WEIGHT N 
         ALLELE ALLELE_1 ALLELE_0 
-        FREQ ALLELE_1_FREQ 
+        FREQ ALLELE_1_FREQ
+        LABEL TotalSampleSize as N
         EFFECT BETA 
         STDERR SE 
         PVAL P_VAL
@@ -30,6 +41,7 @@ function run_metal_across_phenotypes!(regenie_files; output_prefix="gwas.meta_an
                 missingstring="NA",
                 select=[:ID, :ALLELE_0, :ALLELE_1, :ALLELE_1_FREQ, :BETA, :LOG10P, :SE, :N]
             )
+            subset!(group_gwas_results, :ALLELE_1_FREQ => x -> maf .< x .< 1 - maf, skipmissing=true)
             transform!(group_gwas_results, :LOG10P => (x -> neg_exp10.(x))  => :P_VAL)
             CSV.write(joinpath(tmp_dir, group_basename), group_gwas_results; 
                 delim="\t", 
@@ -52,51 +64,38 @@ function run_metal_across_phenotypes!(regenie_files; output_prefix="gwas.meta_an
     return regenie_files
 end
 
-function post_process_metal_output(regenie_files; output_prefix="gwas.meta_analysis")
+function post_process_metal_output(regenie_files; maf=0.01, output_prefix="gwas.meta_analysis")
     for (phenotype_key, group) in pairs(groupby(regenie_files, :PHENOTYPE))
         metal_results = CSV.read(first(group.METAL_FILE), DataFrame; delim="\t")
+        # harmonize names
         select!(metal_results, 
             "MarkerName" => "ID",
+            "MarkerName" => ByRow(x -> split_marker_id(x)) => ["CHROM", "POS", "ALLELE_0", "ALLELE_1"],
             "Effect" => "BETA",
             "StdErr" => "SE",
-            "log(P)" => (x -> .-x) => "LOG10P", # -log10(P) is reported by Regenie, we make it compliant
+            "log(P)" => (x -> .-x) => "LOG10P",
+            "Freq1" => "ALLELE_1_FREQ",
+            "FreqSE" => "ALLELE_1_FREQ_STD",
+            "MinFreq" => "ALLELE_1_FREQ_MIN",
+            "MaxFreq" => "ALLELE_1_FREQ_MAX",
             "Direction" => "DIRECTION",
             "HetISq" => "HET_ISQ",
             "HetChiSq" => "HET_CHISQ",
             "HetDf" => "HET_DF",
-            "logHetP" => "LOG10P_HET"
+            "logHetP" => "LOG10P_HET",
+            "TotalSampleSize" => "N",
+            "Direction" => (col -> count.(∉(Set(['?', '0'])), col)) => "NGROUPS"
         )
-        append_GWAS_info_to_meta_analysis_results!(metal_results, group.FILE)
-        CSV.write(string(output_prefix, ".", phenotype_key.PHENOTYPE, ".gwas.tsv"), metal_results; 
+        # Write output file
+        phenotype_prefix = string(output_prefix, ".", phenotype_key.PHENOTYPE)
+        CSV.write(string(phenotype_prefix, ".gwas.tsv"), metal_results; 
             delim="\t", 
             header=true,
             missingstring="NA"
-            )
+        )
+        # Make plots
+        make_gwas_plots(metal_results; maf=maf, output_prefix=phenotype_prefix)
     end
-end
-
-function append_GWAS_info_to_meta_analysis_results!(metal_results, phenotype_gwas_files)
-    # Get variant info from GWAS results: CHROM, POS, ALLELE_0, ALLELE_1, ALLELE_1_FREQ, N, NGROUPS
-    variants_info_dict = Dict{String, Vector{Any}}()
-    for phenotype_gwas_file in phenotype_gwas_files
-        phenotype_gwas_results = CSV.read(phenotype_gwas_file, DataFrame; delim="\t", missingstring="NA")
-        for row in Tables.namedtupleiterator(phenotype_gwas_results[!, [:CHROM, :POS, :ID, :ALLELE_0, :ALLELE_1, :ALLELE_1_FREQ, :N]])
-            if haskey(variants_info_dict, row.ID)
-                variant_info = variants_info_dict[row.ID]
-                variant_info[end] += 1 # update count of groups the variant was observed in
-                variant_info[end-1] += row.N # update total N
-                variant_info[end-2] = min(variant_info[end-2], row.ALLELE_1_FREQ) # update min ALLELE_1_FREQ
-            else
-                variants_info_dict[row.ID] = [row.CHROM, row.POS, row.ALLELE_0, row.ALLELE_1, row.ALLELE_1_FREQ, row.N, 1]
-            end
-        end
-    end
-    # Update metal results with variant info
-    transform!(metal_results, 
-        :ID => ByRow(id -> variants_info_dict[id]) => [:CHROM, :POS, :ALLELE_0, :ALLELE_1, :ALLELE_1_FREQ, :N, :NGROUPS]
-    )
-
-    return metal_results
 end
 
 function load_meta_analysis_worklist(regenie_files_list; exclude = [])
@@ -119,11 +118,11 @@ Meta-analyse GWAS results from REGENIE using METAL. Groups and phenotypes are in
 - method: METAL meta-analysis method (default: "STDERR")
 - output_prefix: prefix for output files. Per phenotype results are written to "<output_prefix>.<phenotype>.gwas.tsv". (default: "gwas.meta_analysis")
 """
-function meta_analyse(regenie_files_list; exclude_string="ADMIXED", method="STDERR", output_prefix="gwas.meta_analysis")
+function meta_analyse(regenie_files_list; maf=0.01, exclude_string="ADMIXED", method="STDERR", output_prefix="gwas.meta_analysis")
     exclude = split(exclude_string, ",")
     regenie_files = load_meta_analysis_worklist(regenie_files_list; exclude = exclude)
-    run_metal_across_phenotypes!(regenie_files; output_prefix=output_prefix, method=method)
-    post_process_metal_output(regenie_files, output_prefix=output_prefix)
+    run_metal_across_phenotypes!(regenie_files; output_prefix=output_prefix, method=method, maf=maf)
+    post_process_metal_output(regenie_files; maf=maf, output_prefix=output_prefix)
 
     return 0
 end

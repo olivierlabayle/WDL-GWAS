@@ -6,4 +6,5 @@ cromwell-workflow-logs/
 local_gwas_outputs/
 gwas_pooled_outputs/
 gwas_bygroup_outputs/
+gwas_no_finemapping_outputs/
 *.dx.json

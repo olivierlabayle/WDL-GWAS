@@ -16,6 +16,7 @@ using DelimitedFiles
 using CategoricalArrays
 using MLJBase
 using MLJTransforms
+using Base.Threads
 
 const ENSEMBL_SERVER = "https://rest.ensembl.org"
 

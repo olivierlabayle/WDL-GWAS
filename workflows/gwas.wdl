@@ -4,10 +4,11 @@ import "structs.wdl"
 import "pca.wdl"
 import "gwas_step_1.wdl"
 import "gwas_step_2.wdl"
+import "outputs.wdl"
 
 workflow gwas {
     input {
-        String docker_image = "olivierlabayle/wdl-gwas:main"
+        String docker_image = "olivierlabayle/wdl-gwas:optional_fp"
         File covariates_file
         PLINKFileset genotypes
         Array[PGENFileset]+ imputed_genotypes
@@ -18,25 +19,30 @@ workflow gwas {
         String julia_use_sysimage = "true"
         String julia_threads = "auto"
         # QC parameters
+        String split_categorical_covariates = "true"
+        String king_cutoff = "0.0884"
         String min_cases_controls = "10"
         String npcs = "10"
         String approx_pca = "true"
         String maf = "0.01"
         String mac = "10"
         String ip_values = "1000 50 0.05"
-        # PCA parameters
-        String loco_pca = "false"
         # GWAS software
-        String gwas_software = "saige"
+        String gwas_software = "regenie"
         # Regenie parameters
         String regenie_cv_folds = "loocv" # or an integer
         String regenie_bsize = "1000"
+        # Plink2 parameters
+        String plink2_vif = "50"
+        # PCA parameters
+        String loco_pca = if (gwas_software == "saige") then "false" else "true"
         # Finemapping parameters
+        String finemap = "true"
         String min_sig_clump_size = "10"
         String lead_pvalue = "5e-8"
         String p2_pvalue = "5e-5"
         String r2_threshold = "0.1"
-        String clump_kb = "250"
+        String clump_kb = "500"
         String n_causal = "10"
         String finemap_strategy = "rss"
         String susie_max_iter = "1000"
@@ -57,12 +63,17 @@ workflow gwas {
     call make_groups_and_covariates {
         input:
             docker_image=docker_image,
+            genotypes_bed = genotypes.bed,
+            genotypes_bim = genotypes.bim,
+            genotypes_fam = genotypes.fam,
             covariates_file=covariates_file,
             groupby=groupby,
             filters=filterby,
             covariates=covariates,
             phenotypes_list=phenotypes,
             min_cases_controls=min_cases_controls,
+            king_cutoff=king_cutoff,
+            split_categorical_covariates=split_categorical_covariates,
             julia_cmd=get_julia_cmd.julia_cmd
     }
 
@@ -135,7 +146,8 @@ workflow gwas {
                 cv_folds = regenie_cv_folds,
                 bsize = regenie_bsize,
                 maf = maf,
-                mac = mac
+                mac = mac,
+                npcs = npcs
         }
 
         # Second run regenie step 2 across imputed chromosomes filesets
@@ -158,60 +170,56 @@ workflow gwas {
                     regenie_bsize = regenie_bsize,
                     mac = mac,
                     npcs = npcs,
-                    loco_pca = loco_pca
+                    loco_pca = loco_pca,
+                    plink2_vif = plink2_vif
             }
 
-            # Finemap results for the chromosome
-            call finemapping {
-                input:
-                    docker_image = docker_image,
-                    julia_cmd = get_julia_cmd.julia_cmd,
-                    gwas_results = run_gwas_step_2.gwas_output,
-                    pgen_file = imputed_chr_fileset.pgen,
-                    pvar_file = imputed_chr_fileset.pvar,
-                    psam_file = imputed_chr_fileset.psam,
-                    chr = imputed_chr_fileset.chr,
-                    covariates_file = merge_covariates_and_pcs.covariates_and_pcs,
-                    sample_file = sample_list,
-                    group_name = group_name,
-                    min_sig_clump_size = min_sig_clump_size,
-                    lead_pvalue = lead_pvalue,
-                    p2_pvalue = p2_pvalue,
-                    r2_threshold = r2_threshold,
-                    clump_kb = clump_kb,
-                    n_causal = n_causal,
-                    susie_max_iter = susie_max_iter,
-                    finemap_strategy = finemap_strategy
+            if (finemap == "true") {
+                # Finemap results for the chromosome
+                call finemapping {
+                    input:
+                        docker_image = docker_image,
+                        julia_cmd = get_julia_cmd.julia_cmd,
+                        gwas_results = select_first([run_gwas_step_2.gwas_output]),
+                        pgen_file = imputed_chr_fileset.pgen,
+                        pvar_file = imputed_chr_fileset.pvar,
+                        psam_file = imputed_chr_fileset.psam,
+                        chr = imputed_chr_fileset.chr,
+                        covariates_file = merge_covariates_and_pcs.covariates_and_pcs,
+                        sample_file = sample_list,
+                        group_name = group_name,
+                        min_sig_clump_size = min_sig_clump_size,
+                        lead_pvalue = lead_pvalue,
+                        p2_pvalue = p2_pvalue,
+                        r2_threshold = r2_threshold,
+                        clump_kb = clump_kb,
+                        n_causal = n_causal,
+                        susie_max_iter = susie_max_iter,
+                        finemap_strategy = finemap_strategy
+                }
             }
         }
 
         # Merge GWAS results across chromosomes
-        call merge_chr_results as merge_gwas_group_chr_results {
+        call outputs.make_gwas_outputs as make_group_gwas_outputs {
             input:
                 docker_image = docker_image,
                 output_prefix = group_name + ".gwas",
                 julia_cmd = get_julia_cmd.julia_cmd,
+                maf = maf,
                 results_files = select_all(run_gwas_step_2.gwas_output)
         }
 
-        # Merge Finemapping results across chromosomes
-        call merge_chr_results as merge_fp_group_chr_results {
-            input:
-                docker_image = docker_image,
-                output_prefix = group_name + ".finemapping",
-                julia_cmd = get_julia_cmd.julia_cmd,
-                results_files = finemapping.finemapping_results
-        }
-
-        # Generate GWAS plots
-        call make_plots as gwas_group_plots {
-            input:
-                docker_image = docker_image,
-                julia_cmd = get_julia_cmd.julia_cmd,
-                gwas_results = merge_gwas_group_chr_results.merged_results,
-                finemapping_results = merge_fp_group_chr_results.merged_results,
-                maf = maf,
-                output_prefix = group_name
+        if (finemap == "true") {
+            # Merge Finemapping results across chromosomes
+            call outputs.make_finemapping_outputs as make_group_finemapping_outputs {
+                input:
+                    docker_image = docker_image,
+                    output_prefix = group_name + ".finemapping",
+                    julia_cmd = get_julia_cmd.julia_cmd,
+                    gwas_results = make_group_gwas_outputs.merged_results,
+                    results_files = select_all(finemapping.finemapping_results)
+            }
         }
     }
 
@@ -221,68 +229,66 @@ workflow gwas {
             input:
                 docker_image = docker_image,
                 julia_cmd = get_julia_cmd.julia_cmd,
-                gwas_results = merge_gwas_group_chr_results.merged_results,
+                gwas_results = make_group_gwas_outputs.merged_results,
                 exclude = meta_exclude,
-                method = meta_method
+                method = meta_method,
+                maf=maf
         }
 
-        # Finemap meta-analysed results: this effectively loops through phenotypes
-        scatter (meta_gwas_result in meta_analyse.meta_gwas_results) {
-            String phenotype = sub(basename(meta_gwas_result, ".gwas.tsv"), "META_ANALYSIS.", "")
+        if (finemap == "true") {
+            # Finemap meta-analysed results: this effectively loops through phenotypes
+            scatter (meta_gwas_result in meta_analyse.meta_gwas_results) {
+                String phenotype = sub(basename(meta_gwas_result, ".gwas.tsv"), "META_ANALYSIS.", "")
 
-            scatter (imputed_chr_fileset in imputed_genotypes) {
-                call finemapping_summary_stats {
+                scatter (imputed_chr_fileset in imputed_genotypes) {
+                    call finemapping_summary_stats {
+                        input:
+                            docker_image = docker_image,
+                            julia_cmd = get_julia_cmd.julia_cmd,
+                            gwas_results = meta_gwas_result,
+                            covariates_file = make_groups_and_covariates.updated_covariates,
+                            sample_files = make_groups_and_covariates.groups_individuals,
+                            pgen_file = imputed_chr_fileset.pgen,
+                            pvar_file = imputed_chr_fileset.pvar,
+                            psam_file = imputed_chr_fileset.psam,
+                            chr = imputed_chr_fileset.chr,
+                            min_sig_clump_size = min_sig_clump_size,
+                            lead_pvalue = lead_pvalue,
+                            p2_pvalue = p2_pvalue,
+                            r2_threshold = r2_threshold,
+                            clump_kb = clump_kb,
+                            n_causal = n_causal,
+                            exclude = meta_exclude,
+                            susie_max_iter = susie_max_iter,
+                            phenotype=phenotype
+                    }
+                }
+
+                call outputs.make_finemapping_outputs as make_meta_finemapping_outputs {
                     input:
                         docker_image = docker_image,
+                        output_prefix = "META_ANALYSIS." + phenotype + ".finemapping" ,
                         julia_cmd = get_julia_cmd.julia_cmd,
-                        gwas_results = meta_gwas_result,
-                        covariates_file = make_groups_and_covariates.updated_covariates,
-                        sample_files = make_groups_and_covariates.groups_individuals,
-                        pgen_file = imputed_chr_fileset.pgen,
-                        pvar_file = imputed_chr_fileset.pvar,
-                        psam_file = imputed_chr_fileset.psam,
-                        chr = imputed_chr_fileset.chr,
-                        min_sig_clump_size = min_sig_clump_size,
-                        lead_pvalue = lead_pvalue,
-                        p2_pvalue = p2_pvalue,
-                        r2_threshold = r2_threshold,
-                        clump_kb = clump_kb,
-                        n_causal = n_causal,
-                        exclude = meta_exclude,
-                        susie_max_iter = susie_max_iter,
-                        phenotype=phenotype
+                        gwas_results=meta_gwas_result,
+                        results_files = select_all(finemapping_summary_stats.finemapping_results)
                 }
-            }
-
-            call merge_chr_results as merge_fp_meta_chr_results {
-                input:
-                    docker_image = docker_image,
-                    output_prefix = "META_ANALYSIS." + phenotype + ".finemapping" ,
-                    julia_cmd = get_julia_cmd.julia_cmd,
-                    results_files = finemapping_summary_stats.finemapping_results
-            }
-
-            call make_plots as gwas_meta_plots {
-                input:
-                    docker_image = docker_image,
-                    julia_cmd = get_julia_cmd.julia_cmd,
-                    gwas_results = meta_gwas_result,
-                    finemapping_results = merge_fp_meta_chr_results.merged_results,
-                    maf = maf,
-                    output_prefix = "META_ANALYSIS." + phenotype
             }
         }
 
-        Array[File] phenotypes_meta_plots = flatten(gwas_meta_plots.plots)
     }
 
     output {
-        Array[File] gwas_group_results = merge_gwas_group_chr_results.merged_results
-        Array[File] finemapping_group_results = merge_fp_group_chr_results.merged_results
-        Array[File] group_plots = flatten(gwas_group_plots.plots)
+        Array[File] gwas_group_results = make_group_gwas_outputs.merged_results
+        Array[File] gwas_group_plots = flatten(make_group_gwas_outputs.plots)
+
+        Array[File?]? finemapping_group_results = make_group_finemapping_outputs.merged_results
+        Array[Array[File]?]? finemapping_group_plots = make_group_finemapping_outputs.plots
+
         Array[File]? meta_gwas_results = meta_analyse.meta_gwas_results
-        Array[File]? meta_finemapping_results = merge_fp_meta_chr_results.merged_results
-        Array[File]? meta_plots = phenotypes_meta_plots
+        Array[File]? meta_gwas_plots = meta_analyse.plots
+
+        Array[File]? meta_finemapping_results = make_meta_finemapping_outputs.merged_results
+        Array[Array[File]?]? meta_finemapping_plots = make_meta_finemapping_outputs.plots
     }
 }
 
@@ -349,34 +355,9 @@ task ld_prune {
     runtime {
         docker: docker_image
         dx_instance_type: "mem1_ssd1_v2_x8"
-    }
-}
-
-task make_plots {
-    input {
-        String docker_image
-        String julia_cmd
-        File gwas_results
-        File finemapping_results
-        String maf = "0.01"
-        String output_prefix
-    }
-
-    command <<<
-        ~{julia_cmd} make-plots \
-            ~{gwas_results} \
-            ~{finemapping_results} \
-            --maf=~{maf} \
-            --output-prefix=~{output_prefix}
-    >>>
-
-    output {
-        Array[File] plots = glob("*.png")
-    }
-
-    runtime {
-        docker: docker_image
-        dx_instance_type: "mem2_ssd1_v2_x8"
+        cpu: "8"
+        memory: "32G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -387,6 +368,7 @@ task meta_analyse {
         Array[File] gwas_results
         Array[String] exclude
         String method = "STDERR"
+        String maf = "0.01"
     }
 
     command <<<
@@ -398,44 +380,21 @@ task meta_analyse {
             gwas_meta_list.txt \
             --exclude=~{sep="," exclude} \
             --method=~{method} \
+            --maf=~{maf} \
             --output-prefix=META_ANALYSIS
     >>>
 
     output {
         Array[File] meta_gwas_results = glob("META_ANALYSIS.*.tsv")
+        Array[File] plots = glob("*.png")
     }
 
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x8"
-    }
-}
-
-task merge_chr_results {
-    input {
-        String docker_image
-        String output_prefix = "results.all_chr"
-        String julia_cmd
-        Array[File] results_files
-    }
-
-    command <<<
-        for f in ~{sep=" " results_files}; do
-            echo "${f}"
-        done > merge_list.txt
-
-        ~{julia_cmd} merge-chr-results \
-            merge_list.txt \
-            --output-prefix=~{output_prefix}
-    >>>
-
-    output {
-        File merged_results = "${output_prefix}.tsv"
-    }
-
-    runtime {
-        docker: docker_image
-        dx_instance_type: "mem2_ssd1_v2_x8"
+        cpu: "8"
+        memory: "32G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -495,15 +454,17 @@ task finemapping_summary_stats {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x16"
+        cpu: "8"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
-
 
 task finemapping {
     input {
         String docker_image
         String julia_cmd
-        File? gwas_results
+        File gwas_results
         File pgen_file
         File pvar_file
         File psam_file
@@ -554,6 +515,9 @@ task finemapping {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x16"
+        cpu: "8"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -587,22 +551,32 @@ task merge_covariates_and_pcs {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x16"
+        cpu: "8"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
 
 task make_groups_and_covariates {
     input {
         String docker_image
+        File genotypes_bed
+        File genotypes_bim
+        File genotypes_fam
         File covariates_file
         Array[String] groupby = []
         Array[String] filters = []
         Array[String] covariates = ["SEX", "AGE"]
         Array[String] phenotypes_list = ["SEVERE_COVID_19"]
         String min_cases_controls = "10"
+        String king_cutoff = "0.0884"
+        String split_categorical_covariates = "true"
         String julia_cmd
     }
 
     command <<<
+        genotypes_prefix=$(dirname "~{genotypes_bed}")/$(basename "~{genotypes_bed}" .bed)
+
         groupby_string='~{sep="," groupby}'
         groupby_string_opt=""
         if [[ -n "${groupby_string}" ]]; then
@@ -615,15 +589,22 @@ task make_groups_and_covariates {
             filters_string_opt="--filters=${filters_string}"
         fi
 
+        split_cov_opt=""
+        if [[ "~{split_categorical_covariates}" == "true" ]]; then
+            split_cov_opt="--split-categorical-covariates"
+        fi
+
         covariates_string='~{sep="," covariates}'
 
         ~{julia_cmd} \
             make-groups-and-covariates \
+            ${genotypes_prefix} \
             ~{covariates_file} \
             --covariates=${covariates_string} \
             --phenotypes=~{sep="," phenotypes_list} \
             --output-prefix=gwas \
-            --min-cases-controls=~{min_cases_controls} ${groupby_string_opt} ${filters_string_opt}
+            --min-cases-controls=~{min_cases_controls} ${groupby_string_opt} ${filters_string_opt} \
+            --king-cutoff ~{king_cutoff} ${split_cov_opt}
     >>>
 
     output {
@@ -635,6 +616,9 @@ task make_groups_and_covariates {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x8"
+        cpu: "16"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -676,5 +660,8 @@ task make_group_bed_qced {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x8"
+        cpu: "8"
+        memory: "32G"
+        disks: "local-disk 100 SSD"
     }
 }

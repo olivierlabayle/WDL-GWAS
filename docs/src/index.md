@@ -13,12 +13,14 @@ The workflow ca be run on linux platforms and macOS. However, for the later, you
 All dependencies require:
 
 - Java, which can be installed with [sdkman](https://sdkman.io/install/).
-- [Docker](https://docs.docker.com/engine/install/)
 - This repository which you can obtain [here](https://github.com/olivierlabayle/WDL-GWAS/releases).
 
 ### Installation for Local Usage
 
-Running the workflow locally requires cromwell, [this page](https://cromwell.readthedocs.io/en/stable/tutorials/FiveMinuteIntro/) explains how to install it. Then, we recommend setting the environment variable `CROMWELL_PATH` to point to the newly downloaded jar file.
+Running the workflow locally requires:
+
+- [Docker](https://docs.docker.com/engine/install/)
+- Cromwell, [this page](https://cromwell.readthedocs.io/en/stable/tutorials/FiveMinuteIntro/) explains how to install it. Then, we recommend setting the environment variable `CROMWELL_PATH` to point to the newly downloaded jar file.
 
 ### Installation for UK Biobank Usage
 

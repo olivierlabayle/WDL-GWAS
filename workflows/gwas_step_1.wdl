@@ -99,6 +99,9 @@ task saige_step_1 {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x16"
+        cpu: "16"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -176,6 +179,9 @@ task regenie_step_1 {
     runtime {
         docker: docker_image
         dx_instance_type: "mem2_ssd1_v2_x16"
+        cpu: "16"
+        memory: "64G"
+        disks: "local-disk 100 SSD"
     }
 }
 
@@ -194,6 +200,17 @@ workflow gwas_step_1 {
         String bsize
         String maf
         String mac
+        String npcs
+    }
+
+    call make_fake_regenie_step_1 {
+        input:
+            group_name = group_name
+    }
+
+    call make_fake_saige_step_1 {
+        input:
+            group_name = group_name
     }
 
     if (gwas_software == "regenie") {
@@ -212,11 +229,6 @@ workflow gwas_step_1 {
                 maf = maf,
                 mac = mac
         }
-
-        call make_fake_saige_step_1 {
-            input:
-                group_name = group_name
-        }
     }
 
     if (gwas_software == "saige") {
@@ -231,12 +243,8 @@ workflow gwas_step_1 {
                 covariates_file = covariates_file,
                 covariates_list = covariates_list,
                 maf = maf,
-                mac = mac
-        }
-
-        call make_fake_regenie_step_1 {
-            input:
-                group_name = group_name
+                mac = mac,
+                npcs = npcs
         }
     }
 
