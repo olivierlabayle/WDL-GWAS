@@ -21,10 +21,10 @@ workflow gwas {
         # QC parameters
         String split_categorical_covariates = "true"
         String king_cutoff = "0.0884"
-        String min_cases_controls = "10"
-        String npcs = "10"
+        String min_cases_controls = "50"
+        String npcs = "20"
         String approx_pca = "true"
-        String maf = "0.01"
+        String maf = "0.005"
         String mac = "10"
         String ip_values = "1000 50 0.05"
         # GWAS software
@@ -35,9 +35,9 @@ workflow gwas {
         # Plink2 parameters
         String plink2_vif = "50"
         # PCA parameters
-        String loco_pca = if (gwas_software == "saige") then "false" else "true"
+        String loco_pca = "false"
         # Finemapping parameters
-        String finemap = "true"
+        String finemap = "false"
         String min_sig_clump_size = "10"
         String lead_pvalue = "5e-8"
         String p2_pvalue = "5e-5"

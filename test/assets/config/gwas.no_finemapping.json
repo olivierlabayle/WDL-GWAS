@@ -1,8 +1,9 @@
 {
     "gwas.julia_threads": "1",
     "gwas.gwas_software": "plink2",
-    "gwas.finemap": "false",
     "gwas.loco_pca": "false",
+    "gwas.npcs": "10",
+    "gwas.maf": "0.01",
     "gwas.julia_use_sysimage": "false",
     "gwas.covariates_file": "test/assets/covariates/covariates.csv",
     "gwas.covariates": ["COHORT"],

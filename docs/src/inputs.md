@@ -25,7 +25,7 @@ These options describe the general behaviour of the workflow.
   - `COLUMN>value`: which can be used to filter individuals with continuous variables, e.g., `AGE>70`. Any of `<`, `>`, `=`, `<=`, `>=` is a valid operator.
   - A combination of the above, e.g., `filterby=[SUPERPOPULATION=AFR, AGE>70]`.
 - `covariates` (default: `[AGE, SEX, AGE_x_AGE, AGE_x_SEX]`): A list of covariates used to adjust for confounding or increase power in the association testing step. Product of variables can be defined using the `_x_` syntax, for example: `AGE_x_SEX`.
-- `min_cases_controls` (default: 10): For binary traits only, the minimum number of cases/controls within a group to proceed to the GWAS.
+- `min_cases_controls` (default: 50): For binary traits only, the minimum number of cases/controls within a group to proceed to the GWAS.
 - `king_cutoff` (default: 0.0884): Each group is filtered to retain only unrelated individuals up to the given threshold. The default threshold will remove 1st and 2nd-degree relatives (see [this thread](https://groups.google.com/g/plink2-users/c/BSxDwyZ65oc)).
 - `split_categorical_covariates` (default: "true"): Whether categorical covariates should be split during the preparation stage. Plink2 has its own covariate splitting process while Regenie requires all covarites to be floats.
 
@@ -33,10 +33,10 @@ These options describe the general behaviour of the workflow.
 
 PCA is performed using [plink2's PCA](https://www.cog-genomics.org/plink/2.0/strat).
 
-- `npcs` (default 10): Number of principal components to use to account for population structure.
+- `npcs` (default 20): Number of principal components to use to account for population structure.
 - `ip_values` (default: `1000 50 0.05`): A string of values used to create independent genotypes for PCA (see [here](https://www.cog-genomics.org/plink/2.0/ld)).
 - `approx_pca` (default: true): Whether to use an approximation to the PCA algorithm (see [here](https://www.cog-genomics.org/plink/2.0/strat)). Turning this to `false` if used only for small datasets, for instance during testing.
-- `loco_pca` (default: true): Whether principal components should be computed in a LOCO fashion to be used as part of the GWAS covariates (cannot be used with `gwas_software=saige`).
+- `loco_pca` (default: false): Whether principal components should be computed in a LOCO fashion to be used as part of the GWAS covariates (must be on when `gwas_software=saige`).
 
 
 ## GWAS Options
@@ -52,7 +52,7 @@ We offer three different options to run GWAS, [REGENIE](https://rgcgithub.github
 
 Finemapping proceeds in two stages. First clumps are formed using [plink2 LD-based result clumping](https://www.cog-genomics.org/plink/2.0/postproc) and lead variants are identified. Then a window is formed around the lead variant to be further finemapped with [SuSiE](https://stephenslab.github.io/susieR/).
 
-- `finemap` (default `true`): Whether to proceed to finemapping of significant loci.
+- `finemap` (default `false`): Whether to proceed to finemapping of significant loci.
 - `min_sig_clump_size` (default: `10`): Defines the minimum number of variants within a clump for a locus to be considered for finemapping.
 `lead_pvalue` (default: `5e-8`): A clump's lead variant must have at least this p-value.
 - `p2_pvalue` (default: `5e-5`): Other variants in the clump must have at least this p-value.
@@ -72,7 +72,7 @@ Meta analysis is performed using [METAL](https://github.com/statgen/METAL).
 
 ## Miscellaneous Options
 
-- `maf` (default: `0.01`): Minor allele frequency threshold. This is used to filter variants for PCA and for plotting GWAS results. The association testing step is always performed across all variants. Post fitering for downstream analysis is left to the user.
+- `maf` (default: `0.005`): Minor allele frequency threshold. This is used to filter variants for PCA and for plotting GWAS results. The association testing step is always performed across all variants. Post fitering for downstream analysis is left to the user.
 - `mac` (default: `10`): Minor allele count used to filter variants in REGENIE and PCA QC.
 
 ## Developpement Options
