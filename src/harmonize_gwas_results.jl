@@ -84,7 +84,7 @@ function harmonize_gwas_results(gwas_results_file; source_software="saige", outp
         end
     elseif source_software == "regenie"
         DataFrames.select(gwas_results,
-            :CHROM,
+            :CHROM => (x -> replace.(string.(x), "23" => "X")) => :CHROM,
             :GENPOS => :POS,
             :ID,
             :ALLELE0 => :ALLELE_0,
