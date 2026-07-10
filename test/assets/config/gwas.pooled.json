@@ -10,7 +10,7 @@
     "gwas.phenotypes": ["AGE"],
     "gwas.approx_pca": "false",
     "gwas.king_cutoff": "0.45",
-    "finemap": "true",
+    "gwas.finemap": "true",
     "gwas.min_cases_controls": "10",
     "gwas.genotypes": {
         "chr": "all",
