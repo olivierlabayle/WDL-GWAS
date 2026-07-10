@@ -7,7 +7,7 @@ end
 
 function split_marker_id(marker_id) 
     chr, pos, all0, all1 = split(marker_id, ":")
-    chr = parse(Int, replace(chr, "chr" => ""))
+    chr = replace(chr, "chr" => "")
     pos = parse(Int, pos)
     return chr, pos, all0, all1
 end
