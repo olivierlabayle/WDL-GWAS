@@ -2,7 +2,7 @@
 
 ## Contact
 
-In order to report a bug, ask for a feature request or say hello, please fill an [issue](https://github.com/olivierlabayle/WDL-GWAS/issues).
+In order to report a bug, ask for a feature request or say hello, please fill an [issue](https://github.com/baillielab/WDL-GWAS/issues).
 
 ## Contributing
 

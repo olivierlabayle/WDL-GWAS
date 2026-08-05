@@ -1,10 +1,10 @@
 # WDL-GWAS
 
-[![Build Status](https://github.com/olivierlabayle/WDL-GWAS/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/olivierlabayle/WDL-GWAS/actions/workflows/CI.yml?query=branch%3Amain)
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://olivierlabayle.github.io/WDL-GWAS/stable/)
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://olivierlabayle.github.io/WDL-GWAS/dev/)
-![Codecov](https://img.shields.io/codecov/c/github/olivierlabayle/WDL-GWAS/main)
-![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/olivierlabayle/WDL-GWAS)
+[![Build Status](https://github.com/baillielab/WDL-GWAS/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/baillielab/WDL-GWAS/actions/workflows/CI.yml?query=branch%3Amain)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://baillielab.github.io/WDL-GWAS/stable/)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://baillielab.github.io/WDL-GWAS/dev/)
+![Codecov](https://img.shields.io/codecov/c/github/baillielab/WDL-GWAS/main)
+![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/baillielab/WDL-GWAS)
 
 ## Overview
 
@@ -14,9 +14,9 @@ With the [UK Biobank RAP](https://www.ukbiobank.ac.uk/use-our-data/research-anal
 
 ## Documentation
 
-Get started [here](https://olivierlabayle.github.io/WDL-GWAS/stable/).
+Get started [here](https://baillielab.github.io/WDL-GWAS/stable/).
 
 ## Get in Touch
 
-To report problems, ask questions or simply give a thumbs up please fill an [issue](https://github.com/olivierlabayle/WDL-GWAS/issues) so that everyone can benefit from the answer!
+To report problems, ask questions or simply give a thumbs up please fill an [issue](https://github.com/baillielab/WDL-GWAS/issues) so that everyone can benefit from the answer!
 

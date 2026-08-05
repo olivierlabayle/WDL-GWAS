@@ -22,8 +22,8 @@ keywords:
   - population genetics
   - reproducible research
 
-repository-code: "https://github.com/olivierlabayle/WDL-GWAS"
-url: "https://github.com/olivierlabayle/WDL-GWAS"
+repository-code: "https://github.com/baillielab/WDL-GWAS"
+url: "https://github.com/baillielab/WDL-GWAS"
 
 license: "MIT"
 
@@ -35,4 +35,4 @@ preferred-citation:
       orcid: "https://orcid.org/0000-0002-3708-3706"
   title: "WDL-GWAS"
   year: 2026
-  repository-code: "https://github.com/olivierlabayle/WDL-GWAS"
+  repository-code: "https://github.com/baillielab/WDL-GWAS"
